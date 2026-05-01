@@ -55,14 +55,14 @@ export default function LearnersPage() {
   const fetchLearners = async () => {
     try {
       setLoading(true);
-      const params: PaginationParams & { search?: string; role?: string } = {
-        page: pagination.page,
-        limit: pagination.limit,
-        search: searchQuery || undefined,
+      const params = new URLSearchParams({
+        page: pagination.page.toString(),
+        limit: pagination.limit.toString(),
         role: 'learner',
-      };
+      });
+      if (searchQuery) params.append('search', searchQuery);
 
-      const response = await api.get<{ users: User[]; total: number; totalPages: number }>('/users', params);
+      const response = await api.get<{ users: User[]; total: number; totalPages: number }>(`/users?${params.toString()}`);
       setLearners(response.users);
       setPagination(prev => ({
         ...prev,

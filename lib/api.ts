@@ -239,14 +239,17 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
-  patch: <T>(endpoint: string, body: unknown, options?: FetchOptions) =>
+  patch: <T>(endpoint: string, body?: unknown, options?: FetchOptions) =>
     apiClient<T>(endpoint, {
       ...options,
       method: 'PATCH',
-      body: JSON.stringify(body),
+      body: body ? JSON.stringify(body) : undefined,
     }),
 
   delete: <T>(endpoint: string, options?: FetchOptions) =>
+    apiClient<T>(endpoint, { ...options, method: 'DELETE' }),
+
+  del: <T>(endpoint: string, options?: FetchOptions) =>
     apiClient<T>(endpoint, { ...options, method: 'DELETE' }),
 
   // File upload

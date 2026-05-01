@@ -51,10 +51,13 @@ export function TutorSidebar() {
         {/* Logo */}
         <div className="flex h-20 items-center px-4">
           <Link href="/tutor/dashboard" className="flex items-center gap-3">
-            <div className="p-2 bg-[#004D20] rounded-xl flex-shrink-0">
-              <Logo iconOnly className="h-5 w-5 text-white" />
-            </div>
-            {!isCollapsed && <Logo />}
+            {isCollapsed ? (
+              <div className="p-2 bg-[#004D20] rounded-xl flex-shrink-0">
+                <Logo iconOnly className="h-5 w-5 text-white" />
+              </div>
+            ) : (
+              <Logo />
+            )}
           </Link>
         </div>
 

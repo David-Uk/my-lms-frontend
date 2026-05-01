@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { User, UserRole, UserStatus } from '@/types';
-import { updateUserAction } from '../actions';
+import { updateUserAction } from '../../actions';
 
 export function UserEditForm({ user }: { user: User }) {
   const [isLoading, setIsLoading] = useState(false);

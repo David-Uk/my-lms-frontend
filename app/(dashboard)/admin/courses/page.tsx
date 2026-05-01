@@ -36,7 +36,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
       return await api.get<PaginatedResponse<Course>>(`/courses?${params.toString()}`);
     } catch (error) {
       console.error('Server-side fetch error:', error);
-      return { data: [], meta: { total: 0, page: 1, limit: 10, totalPages: 1 } } as PaginatedResponse<Course>;
+      return { data: [], total: 0, page: 1, limit: 10, totalPages: 1, meta: { total: 0, page: 1, limit: 10, totalPages: 1 } } as PaginatedResponse<Course>;
     }
   };
 

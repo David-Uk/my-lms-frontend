@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import SuperAdminLayout from '../layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -106,8 +105,7 @@ export default function SuperAdminAuditPage() {
   };
 
   return (
-    <SuperAdminLayout>
-      <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500">
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -211,6 +209,5 @@ export default function SuperAdminAuditPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

@@ -81,6 +81,12 @@ export interface PaginatedResponse<T> {
   page: number;
   limit: number;
   totalPages: number;
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
 // Course
@@ -95,6 +101,7 @@ export interface Course {
   contents: CourseContent[];
   courseTutors: CourseTutor[];
   cohorts: Cohort[];
+  enrolledCount?: number;
   createdAt: string;
   updatedAt: string;
 }
