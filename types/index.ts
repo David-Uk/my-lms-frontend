@@ -22,7 +22,10 @@ export interface User {
 // JWT Payload
 export interface JWTPayload {
   userId: string;
+  email: string;
   role: UserRole;
+  firstName: string;
+  lastName: string;
   exp: number;
   iat: number;
 }
