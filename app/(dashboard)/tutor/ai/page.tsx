@@ -6,25 +6,35 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
-import { Brain, Mic, BookOpen, Layers, Send, Sparkles, FileAudio, CheckCircle2 } from 'lucide-react';
+import { Brain, Sparkles, FileAudio, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function AIFeaturesPage() {
   const [activeTab, setActiveTab] = useState<'quiz' | 'flashcards' | 'transcribe'>('quiz');
   const [topic, setTopic] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   // Transcription states
   const [file, setFile] = useState<File | null>(null);
 
+  const extractMessage = (err: unknown): string => {
+    if (err instanceof Error) return err.message;
+    if (err && typeof err === 'object' && 'message' in err) return String((err as any).message);
+    return 'Something went wrong. Please try again.';
+  };
+
   const handleGenerateQuiz = async () => {
     if (!topic) return;
     setIsLoading(true);
+    setError(null);
+    setResult(null);
     try {
       const response = await api.post('/ai/quiz', { topic });
       setResult(response);
     } catch (err) {
-      console.error(err);
+      console.error('[AI Quiz]', err);
+      setError(extractMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -33,11 +43,14 @@ export default function AIFeaturesPage() {
   const handleGenerateFlashcards = async () => {
     if (!topic) return;
     setIsLoading(true);
+    setError(null);
+    setResult(null);
     try {
       const response = await api.post('/ai/flashcards', { topic });
       setResult(response);
     } catch (err) {
-      console.error(err);
+      console.error('[AI Flashcards]', err);
+      setError(extractMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -46,13 +59,16 @@ export default function AIFeaturesPage() {
   const handleTranscribe = async () => {
     if (!file) return;
     setIsLoading(true);
+    setError(null);
+    setResult(null);
     try {
       const formData = new FormData();
       formData.append('file', file);
       const response = await api.upload<any>('/ai/transcribe', formData);
       setResult(response);
     } catch (err) {
-      console.error(err);
+      console.error('[AI Transcribe]', err);
+      setError(extractMessage(err));
     } finally {
       setIsLoading(false);
     }
@@ -71,19 +87,19 @@ export default function AIFeaturesPage() {
 
         {/* Tabs */}
         <div className="flex bg-gray-100 p-1 rounded-2xl w-fit">
-          <button 
+          <button
             onClick={() => { setActiveTab('quiz'); setResult(null); }}
             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'quiz' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Quiz Generator
           </button>
-          <button 
+          <button
             onClick={() => { setActiveTab('flashcards'); setResult(null); }}
             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'flashcards' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             Flashcards
           </button>
-          <button 
+          <button
             onClick={() => { setActiveTab('transcribe'); setResult(null); }}
             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'transcribe' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
@@ -106,11 +122,11 @@ export default function AIFeaturesPage() {
               {activeTab === 'transcribe' ? (
                 <div className="space-y-4">
                   <div className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center hover:border-blue-400 transition-colors group">
-                    <input 
-                      type="file" 
-                      id="audio-upload" 
-                      className="hidden" 
-                      accept="audio/*" 
+                    <input
+                      type="file"
+                      id="audio-upload"
+                      className="hidden"
+                      accept="audio/*"
                       onChange={(e) => setFile(e.target.files?.[0] || null)}
                     />
                     <label htmlFor="audio-upload" className="cursor-pointer space-y-2 block">
@@ -119,8 +135,8 @@ export default function AIFeaturesPage() {
                       <p className="text-xs text-gray-400">MP3, WAV up to 25MB</p>
                     </label>
                   </div>
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700" 
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700"
                     onClick={handleTranscribe}
                     disabled={!file || isLoading}
                     isLoading={isLoading}
@@ -136,8 +152,8 @@ export default function AIFeaturesPage() {
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                   />
-                  <Button 
-                    className="w-full bg-blue-600 hover:bg-blue-700" 
+                  <Button
+                    className="w-full bg-blue-600 hover:bg-blue-700"
                     onClick={activeTab === 'quiz' ? handleGenerateQuiz : handleGenerateFlashcards}
                     disabled={!topic || isLoading}
                     isLoading={isLoading}
@@ -151,7 +167,21 @@ export default function AIFeaturesPage() {
 
           {/* Result Display */}
           <div className="lg:col-span-2">
-            {!result && !isLoading ? (
+            {error ? (
+              <div className="h-full min-h-[400px] bg-red-50 border-2 border-red-200 rounded-3xl flex flex-col items-center justify-center text-center p-8 space-y-4">
+                <AlertCircle className="h-12 w-12 text-red-400" />
+                <div>
+                  <h3 className="text-lg font-bold text-red-700">Generation Failed</h3>
+                  <p className="text-red-600 mt-1 text-sm max-w-sm">{error}</p>
+                </div>
+                <button
+                  onClick={() => setError(null)}
+                  className="text-xs text-red-500 underline hover:text-red-700"
+                >
+                  Dismiss
+                </button>
+              </div>
+            ) : !result && !isLoading ? (
               <div className="h-full min-h-[400px] bg-gray-50 border-2 border-dashed border-gray-200 rounded-3xl flex flex-col items-center justify-center text-gray-400 p-8 text-center">
                 <Brain className="h-16 w-16 mb-4 opacity-20" />
                 <h3 className="text-xl font-bold opacity-50">Awaiting Input</h3>
@@ -179,7 +209,7 @@ export default function AIFeaturesPage() {
                     <div className="space-y-6">
                       {result.questions.map((q: any, i: number) => (
                         <div key={i} className="p-4 bg-gray-50 rounded-2xl border">
-                          <p className="font-bold mb-3">{i+1}. {q.question}</p>
+                          <p className="font-bold mb-3">{i + 1}. {q.question}</p>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {q.options && typeof q.options === 'object' && Object.entries(q.options).map(([key, val]) => (
                               <div key={key} className="p-2 bg-white rounded-lg text-sm border">

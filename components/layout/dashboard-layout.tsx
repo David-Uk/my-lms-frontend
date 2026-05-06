@@ -13,13 +13,17 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
   const userRole = user?.role;
   const { isCollapsed } = useSidebarStore();
 
-  // Select sidebar based on role
+  // Don't render the sidebar until the auth store has rehydrated from localStorage.
+  // Without this guard, the server renders with user=null (AdminSidebar fallback)
+  // while the client renders with the real role — causing a hydration mismatch.
   const renderSidebar = () => {
-    if (userRole === 'admin') {
+    if (isLoading) return null;
+
+    if (userRole === 'admin' || userRole === 'superadmin') {
       return <AdminSidebar />;
     }
     if (userRole === 'tutor') {
@@ -28,14 +32,16 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     if (userRole === 'learner') {
       return <LearnerSidebar />;
     }
-    // Default/fallback - shouldn't happen with middleware protection
     return <AdminSidebar />;
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
       {renderSidebar()}
-      <div className={cn('transition-all duration-300', isCollapsed ? 'lg:ml-20' : 'lg:ml-64')}>
+      <div className={cn(
+        'transition-all duration-300',
+        isLoading ? '' : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+      )}>
         <Header />
         <main className="p-4 sm:p-6 lg:p-8">{children}</main>
       </div>

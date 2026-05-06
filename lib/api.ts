@@ -1,14 +1,42 @@
-import { JWTPayload, ApiError } from '@/types';
+import { JWTPayload, ApiError, ApiRequestError } from '@/types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
 // Token management
 export async function getToken(): Promise<string | null> {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
+    // 1. Try the direct localStorage key (set by setToken() on login)
+    const lsToken = localStorage.getItem('token');
+    if (lsToken) return lsToken;
+
+    // 2. Try the Zustand persisted auth store (key: 'auth-storage')
+    try {
+      const raw = localStorage.getItem('auth-storage');
+      if (raw) {
+        const parsed = JSON.parse(raw) as { state?: { token?: string } };
+        const zustandToken = parsed?.state?.token;
+        if (zustandToken) {
+          // Re-sync to the direct key so future calls are fast
+          localStorage.setItem('token', zustandToken);
+          return zustandToken;
+        }
+      }
+    } catch {
+      // Ignore parse errors
+    }
+
+    // 3. Fall back to cookie
+    const match = document.cookie.match(/(?:^|;\s*)token=([^;]+)/);
+    if (match) {
+      const cookieToken = decodeURIComponent(match[1]);
+      localStorage.setItem('token', cookieToken);
+      return cookieToken;
+    }
+
+    return null;
   }
 
-  // Server-side: try to get from cookies
+  // Server-side: read from cookies
   try {
     const { cookies } = await import('next/headers');
     const cookieStore = await cookies();
@@ -23,12 +51,21 @@ export async function getToken(): Promise<string | null> {
 
 export function setToken(token: string): void {
   if (typeof window !== 'undefined') {
+    // Write to the direct key (read by getToken)
     localStorage.setItem('token', token);
-    // Set cookie for server-side access with all necessary attributes
+    // Keep the Zustand persisted store in sync
+    try {
+      const raw = localStorage.getItem('auth-storage');
+      const parsed = raw ? (JSON.parse(raw) as { state?: Record<string, unknown> }) : { state: {} };
+      parsed.state = { ...(parsed.state || {}), token };
+      localStorage.setItem('auth-storage', JSON.stringify(parsed));
+    } catch {
+      // Non-fatal
+    }
+    // Set cookie for server-side access
     const isSecure = window.location.protocol === 'https:';
     const secureFlag = isSecure ? '; Secure' : '';
     document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax${secureFlag}`;
-    console.log('[setToken] Cookie set, secure:', isSecure);
   }
 }
 
@@ -54,7 +91,7 @@ export function decodeToken(token: string): JWTPayload | null {
     const base64Url = token.split('.')[1];
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    
+
     let jsonPayload: string;
     if (typeof window !== 'undefined') {
       jsonPayload = decodeURIComponent(
@@ -66,7 +103,7 @@ export function decodeToken(token: string): JWTPayload | null {
     } else {
       jsonPayload = Buffer.from(base64, 'base64').toString('utf-8');
     }
-    
+
     return JSON.parse(jsonPayload) as JWTPayload;
   } catch (error) {
     console.error('[decodeToken] Error:', error);
@@ -151,73 +188,69 @@ async function apiClient<T>(
   }
 
   console.log(`[apiClient] Request: ${fetchOptions.method || 'GET'} ${url}`);
-  console.log(`[apiClient] Headers:`, JSON.stringify({ ...headers, Authorization: headers.Authorization ? 'Bearer [REDACTED]' : 'Missing' }));
-  
+
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       ...fetchOptions,
       headers,
       credentials: 'include',
     });
-
-    // Handle 401 - redirect to login
-    if (response.status === 401) {
-      await removeToken();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw new Error('Unauthorized. Please login again.');
-    }
-
-    // Handle 403 - log but don't redirect (permission issue)
-    if (response.status === 403) {
-      console.error('[API] 403 Forbidden for:', endpoint);
-      // Don't redirect - let the component handle it
-    }
-
-    // Get the response body as text first so we can try to parse it
-    const bodyText = await response.text();
-    let data: any;
-
-    if (!bodyText || bodyText.trim() === '') {
-      data = {};
-    } else {
-      try {
-        data = JSON.parse(bodyText);
-      } catch (e) {
-        data = bodyText;
-      }
-    }
-
-    // Handle other errors
-    if (!response.ok) {
-      const error: ApiError = {
-        status: response.status,
-        message: (typeof data === 'object' && data?.message) || bodyText || `HTTP error! status: ${response.status}`,
-        errors: typeof data === 'object' ? data?.errors : undefined,
-      };
-      throw error;
-    }
-
-    // Handle 204 No Content
-    if (response.status === 204) {
-      return undefined as T;
-    }
-
-    return data as T;
-
-    // Cache GET responses
-    if (useCache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
-      cache.set(key, { data, timestamp: Date.now() });
-    }
-
-    return data;
-  } catch (error) {
-    if (error instanceof Error && 'status' in error) {
-      throw error;
-    }
-    throw new Error(error instanceof Error ? error.message : 'Network error');
+  } catch (networkError) {
+    // True network failure — server unreachable, DNS failure, CORS preflight blocked, etc.
+    const msg = networkError instanceof Error ? networkError.message : String(networkError);
+    console.error(`[apiClient] Network failure for ${url}:`, msg);
+    throw new Error(`Cannot reach the server at ${API_BASE_URL}. Is the backend running? (${msg})`);
   }
+
+  // Handle 401 - redirect to login
+  if (response.status === 401) {
+    await removeToken();
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    }
+    throw new Error('Unauthorized. Please login again.');
+  }
+
+  // Handle 403
+  if (response.status === 403) {
+    console.error('[API] 403 Forbidden for:', endpoint);
+  }
+
+  // Parse body
+  const bodyText = await response.text();
+  let data: any;
+  if (!bodyText || bodyText.trim() === '') {
+    data = {};
+  } else {
+    try {
+      data = JSON.parse(bodyText);
+    } catch {
+      data = bodyText;
+    }
+  }
+
+  // Handle non-2xx responses
+  if (!response.ok) {
+    const message =
+      (typeof data === 'object' && data?.message) ||
+      bodyText ||
+      `HTTP ${response.status}`;
+    const errors = typeof data === 'object' ? data?.errors : undefined;
+    throw new ApiRequestError(response.status, message, errors);
+  }
+
+  // Handle 204 No Content
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
+  // Cache successful GET responses
+  if (useCache && (!fetchOptions.method || fetchOptions.method === 'GET')) {
+    cache.set(key, { data, timestamp: Date.now() });
+  }
+
+  return data as T;
 }
 
 // HTTP methods
@@ -270,10 +303,8 @@ export const api = {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw {
-        status: response.status,
-        message: errorData.message || `HTTP error! status: ${response.status}`,
-      } as ApiError;
+      const message = errorData.message || `HTTP error! status: ${response.status}`;
+      throw new ApiRequestError(response.status, message, errorData.errors);
     }
 
     return response.json() as Promise<T>;

@@ -214,12 +214,12 @@ export interface CreateQuizRequest {
 }
 
 // Quiz Question
-export type QuestionType = 
-  | 'single_option' 
-  | 'multiple_option' 
-  | 'true_false' 
-  | 'image_matching' 
-  | 'fill_in_the_blank' 
+export type QuestionType =
+  | 'single_option'
+  | 'multiple_option'
+  | 'true_false'
+  | 'image_matching'
+  | 'fill_in_the_blank'
   | 'short_answer';
 
 export interface QuizQuestion {
@@ -405,4 +405,16 @@ export interface ApiError {
   status: number;
   message: string;
   errors?: Record<string, string[]>;
+}
+
+export class ApiRequestError extends Error {
+  status: number;
+  errors?: Record<string, string[]>;
+
+  constructor(status: number, message: string, errors?: Record<string, string[]>) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.errors = errors;
+  }
 }
