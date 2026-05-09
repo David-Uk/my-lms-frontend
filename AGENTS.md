@@ -47,7 +47,8 @@
   - Interactive code editor for challenges.
   - Video streaming/Live sessions interface.
 - **AI-Powered Tools**:
-  - Quiz generator interface.
+  - AI Quiz Generator: Automated question generation, manual configuration, preview with correct answers, and email invitations.
+  - Secure Quiz Access: Email-based access verification and strict time-window enforcement.
   - Flashcard study mode.
   - Transcription viewer.
   - Admin performance insight cards.

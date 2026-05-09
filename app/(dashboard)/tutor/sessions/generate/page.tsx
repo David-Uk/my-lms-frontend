@@ -331,7 +331,10 @@ export default function GenerateQuizPage() {
             firstName: p.firstName,
             lastName: p.lastName,
           })),
-          quiz: generatedQuiz.quiz,
+          quiz: {
+            ...generatedQuiz.quiz,
+            questions: generatedQuiz.questions,
+          },
         }),
       });
 
@@ -342,7 +345,11 @@ export default function GenerateQuizPage() {
 
       const data = await response.json();
       setParticipants(prev => prev.map(p => ({ ...p, invited: true })));
-      setGeneratedQuiz(prev => prev ? { ...prev, invites: data.invites } : null);
+      setGeneratedQuiz(prev => prev ? { 
+        ...prev, 
+        quiz: { ...prev.quiz, id: data.quizId },
+        invites: data.invites 
+      } : null);
       setStep('complete');
     } catch (err) {
       console.error('Failed to send invites:', err);
@@ -713,26 +720,34 @@ export default function GenerateQuizPage() {
                         </div>
                         <div className="flex-1">
                           <div className="mb-2 font-semibold text-gray-800">{question.question}</div>
-                          {question.options && question.options.length > 0 && (
+                          {question.options && question.options.length > 0 ? (
                             <div className="space-y-2">
                               <div className="text-sm font-medium text-gray-700 mb-1">Options:</div>
                               {question.options.map((option, optIndex) => {
-                                const optionLabel = String.fromCharCode(97 + optIndex); // a, b, c, d
+                                const optionLabel = String.fromCharCode(97 + optIndex);
                                 const isCorrect = Array.isArray(question.correctAnswer)
                                   ? question.correctAnswer.some(ans => 
-                                      typeof ans === 'object' && ans.text === option.text ||
-                                      typeof ans === 'string' && ans === option.text
+                                      (typeof ans === 'object' && ans.text === (typeof option === 'string' ? option : option.text)) ||
+                                      (typeof ans === 'string' && ans === (typeof option === 'string' ? option : option.text))
                                     )
-                                  : typeof question.correctAnswer === 'object' && question.correctAnswer.text === option.text ||
-                                    typeof question.correctAnswer === 'string' && question.correctAnswer === option.text;
+                                  : (typeof question.correctAnswer === 'object' && question.correctAnswer.text === (typeof option === 'string' ? option : option.text)) ||
+                                    (typeof question.correctAnswer === 'string' && question.correctAnswer === (typeof option === 'string' ? option : option.text));
                                 
                                 return (
                                   <div key={optIndex} className="flex items-center gap-2 pl-4">
-                                    <div className={`w-3 h-3 rounded-full border-2 ${isCorrect ? 'border-green-500 bg-green-50' : 'border-gray-300 bg-gray-50'}`} />
-                                    <span className="flex-1">{optionLabel}) {typeof option === 'string' ? option : option.text}</span>
+                                    <div className={`w-3 h-3 rounded-full border-2 ${isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-gray-50'}`} />
+                                    <span className={`flex-1 ${isCorrect ? 'text-green-700 font-bold' : ''}`}>
+                                      {optionLabel}) {typeof option === 'string' ? option : option.text}
+                                      {isCorrect && <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-widest font-black">Correct Answer</span>}
+                                    </span>
                                   </div>
                                 );
                               })}
+                            </div>
+                          ) : (
+                            <div className="mt-2 p-4 bg-green-50 rounded-2xl border border-green-100">
+                              <p className="text-[10px] font-black text-green-600 uppercase tracking-widest mb-1">Correct Answer</p>
+                              <p className="text-sm font-bold text-green-900">{Array.isArray(question.correctAnswer) ? question.correctAnswer.join(', ') : String(question.correctAnswer)}</p>
                             </div>
                           )}
                         </div>
@@ -956,7 +971,7 @@ export default function GenerateQuizPage() {
                 <div className="space-y-6">
                   <div className="bg-purple-50 rounded-2xl p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <h3 className="font-bold text-lg text-purple-900">Quiz Access Link</h3>
+                      <h3 className="font-bold text-lg text-purple-900">Learner Access Link</h3>
                       <Button variant="ghost" size="sm" onClick={copyInviteLink} className="gap-2 text-purple-600">
                         <Copy className="h-4 w-4" />
                         Copy Link
@@ -965,6 +980,16 @@ export default function GenerateQuizPage() {
                     <code className="text-sm bg-white px-4 py-3 rounded-xl border border-purple-200 font-mono block break-all text-purple-700">
                       {typeof window !== 'undefined' ? `${window.location.origin}/quiz/take/${generatedQuiz.quiz.id}` : ''}
                     </code>
+                    <div className="flex items-center justify-between mt-4 p-4 bg-white rounded-xl border border-purple-100">
+                      <div>
+                        <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Quiz ID</p>
+                        <p className="text-sm font-mono font-bold text-purple-900">{generatedQuiz.quiz.id}</p>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={copyQuizId} className="h-8 rounded-lg gap-2 text-purple-600">
+                        <Copy className="h-3 w-3" />
+                        Copy ID
+                      </Button>
+                    </div>
                     <p className="text-xs text-purple-700 mt-3">
                       Participants can access the quiz using this link after receiving their invite email
                     </p>
