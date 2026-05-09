@@ -3,7 +3,6 @@
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { getToken } from '@/lib/api';
@@ -386,7 +385,7 @@ export default function GenerateQuizPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000 max-w-5xl mx-auto">
         <div className="flex items-center gap-4">
           <Link href="/tutor/sessions">
@@ -1008,6 +1007,6 @@ export default function GenerateQuizPage() {
           </div>
         )}
       </div>
-    </DashboardLayout>
+    </>
   );
 }

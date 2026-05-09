@@ -1,6 +1,5 @@
 import { Metadata } from 'next';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import type { Course, PaginatedResponse } from '@/types';
@@ -43,7 +42,7 @@ export default async function CoursesPage({ searchParams }: PageProps) {
   const initialData = await fetchCourses();
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-8 animate-in slide-in-from-bottom-2 duration-700">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -78,6 +77,6 @@ export default async function CoursesPage({ searchParams }: PageProps) {
           <CourseTable initialData={initialData} search={search} difficulty={difficulty} />
         </Suspense>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

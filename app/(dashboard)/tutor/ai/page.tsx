@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -139,7 +138,7 @@ export default function AIFeaturesPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-5xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
@@ -483,6 +482,6 @@ export default function AIFeaturesPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

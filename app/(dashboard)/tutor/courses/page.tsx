@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { api } from '@/lib/api';
 import type { Course, PaginatedResponse } from '@/types';
 import { TutorCourseList } from './tutor-course-list';
@@ -38,7 +37,7 @@ export default async function TutorCoursesPage({ searchParams }: PageProps) {
   const courses = await fetchCourses();
 
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-10 animate-in fade-in duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-center gap-5">
@@ -62,6 +61,6 @@ export default async function TutorCoursesPage({ searchParams }: PageProps) {
           <TutorCourseList initialCourses={courses} search={search} />
         </Suspense>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

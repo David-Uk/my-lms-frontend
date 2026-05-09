@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,7 +39,7 @@ export default function JoinQuizPage() {
   };
 
   return (
-    <DashboardLayout>
+    <>
       <div className="max-w-md mx-auto pt-12">
         <Card className="border-2 border-blue-100 shadow-xl overflow-hidden">
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center text-white">
@@ -86,6 +85,6 @@ export default function JoinQuizPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

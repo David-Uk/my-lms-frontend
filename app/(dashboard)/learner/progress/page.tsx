@@ -1,12 +1,11 @@
 'use client';
 
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart3, Trophy, Clock, BookOpen } from 'lucide-react';
 
 export default function LearnerProgressPage() {
   return (
-    <DashboardLayout>
+    <>
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">My Progress</h1>
@@ -78,6 +77,6 @@ export default function LearnerProgressPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </>
   );
 }
