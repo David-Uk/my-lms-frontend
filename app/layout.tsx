@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ToastContainer } from "@/components/ui/toast-container";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -40,7 +42,10 @@ export default function RootLayout({
       className={`${poppins.variable} ${roboto.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col font-roboto">{children}</body>
+      <body className="min-h-full flex flex-col font-roboto">
+        {children}
+        <ToastContainer />
+      </body>
     </html>
   );
 }

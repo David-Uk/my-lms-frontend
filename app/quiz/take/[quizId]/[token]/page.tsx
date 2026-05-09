@@ -21,8 +21,12 @@ interface QuizData {
     id: string;
     title: string;
     description: string | null;
-    timeAllocated: number; // minutes
+    timeAllocated: number;
+    durationMinutes: number;
     passMark: number;
+    totalMarks: number;
+    startDateTime: string;
+    endDateTime: string;
 }
 
 interface Participant {
@@ -99,13 +103,30 @@ export default function TakeQuizPage() {
                 const data = await apiGet<{ quiz: QuizData; questions: QuizQuestion[]; participant: Participant }>(
                     `/quizzes/take/${quizId}/${token}`,
                 );
+
+                const now = new Date();
+                const startTime = new Date(data.quiz.startDateTime);
+                const endTime = new Date(data.quiz.endDateTime);
+
+                if (now < startTime) {
+                    setError(`This quiz is not available yet. It will open on ${startTime.toLocaleString()}`);
+                    setPhase('error');
+                    return;
+                }
+
+                if (now > endTime) {
+                    setError(`This quiz has ended. It was available until ${endTime.toLocaleString()}`);
+                    setPhase('error');
+                    return;
+                }
+
+                const durationMinutes = data.quiz.durationMinutes || data.quiz.timeAllocated;
                 setQuiz(data.quiz);
                 setQuestions(data.questions);
                 setParticipant(data.participant);
-                setTimeLeft(data.quiz.timeAllocated * 60);
+                setTimeLeft(durationMinutes * 60);
 
                 if (data.participant.status === 'completed') {
-                    // Already done — fetch results directly
                     const res = await apiGet<{ participant: Participant }>(`/quizzes/results/${data.participant.id}`);
                     setResults(res.participant);
                     setPhase('completed');
@@ -132,11 +153,20 @@ export default function TakeQuizPage() {
                 }
                 return prev - 1;
             });
+
+            if (quiz?.endDateTime) {
+                const now = new Date();
+                const endTime = new Date(quiz.endDateTime);
+                if (now >= endTime) {
+                    clearInterval(interval);
+                    handleComplete();
+                }
+            }
         }, 1000);
 
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [phase]);
+    }, [phase, quiz?.endDateTime]);
 
     // ── Tab-switch detection ────────────────────────────────────────────────────
     const handleTabSwitch = useCallback(async () => {
@@ -176,12 +206,14 @@ export default function TakeQuizPage() {
         if (!participant) return;
         setIsSubmitting(true);
         try {
-            // Call start endpoint to mark participant as STARTED (idempotent if already started)
             const res = await apiPost<{ quiz: QuizData; participant: Participant }>('/quizzes/start', {
                 quizId,
                 token,
             });
+
+            const durationMinutes = res.quiz.durationMinutes || res.quiz.timeAllocated;
             setParticipant(res.participant);
+            setTimeLeft(durationMinutes * 60);
             setPhase('taking');
         } catch (err: any) {
             setError(err.message || 'Failed to start quiz');

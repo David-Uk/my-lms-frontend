@@ -8,7 +8,6 @@ import { useSidebarStore } from '@/stores/sidebar-store';
 import {
   LayoutDashboard,
   BookOpen,
-  GraduationCap,
   Settings,
   LogOut,
   Brain,
@@ -16,6 +15,7 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavItem {
@@ -29,6 +29,7 @@ const tutorNavItems: NavItem[] = [
   { label: 'My Courses', href: '/tutor/courses', icon: <BookOpen className="h-5 w-5" /> },
   { label: 'My Students', href: '/tutor/students', icon: <Users className="h-5 w-5" /> },
   { label: 'Quiz Sessions', href: '/tutor/sessions', icon: <Trophy className="h-5 w-5" /> },
+  { label: 'AI Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles className="h-5 w-5" /> },
   { label: 'AI Tools', href: '/tutor/ai', icon: <Brain className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
 ];

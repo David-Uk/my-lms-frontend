@@ -25,16 +25,14 @@ export default function QuizSessionsPage() {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      // Fetch courses to get nested cohorts and quizzes
-      const coursesRes = await api.get<PaginatedResponse<Course>>('/courses?limit=100');
+      const [coursesRes, sessionsRes] = await Promise.all([
+        api.get<PaginatedResponse<Course>>('/courses?limit=100'),
+        api.get<QuizSession[]>('/assessments/sessions')
+      ]);
       
       const allCohorts = coursesRes.data.flatMap(c => c.cohorts || []);
-      // We also need quizzes. Quizzes are inside assessments.
-      // This is a bit complex in one go, but let's assume we can find them.
-      // For now, I'll just fetch whatever assessments I can.
-      
       setCohorts(allCohorts);
-      // setSessions(sessionsRes);
+      setSessions(sessionsRes);
     } catch (error) {
       console.error(error);
     } finally {

@@ -6,6 +6,7 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Users, BookOpen, GraduationCap, Award, ArrowRight, Sparkles, TrendingUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { StatCard } from '@/components/dashboard/stat-card';
 import { api } from '@/lib/api';
 import type { User, Course, PaginatedResponse } from '@/types';
 
@@ -99,6 +100,7 @@ export default function AdminDashboardPage() {
             color="blue"
             icon={<Users className="h-6 w-6" />}
             loading={loading}
+            variant="gradient"
           />
           <StatCard
             title="Courses"
@@ -107,6 +109,7 @@ export default function AdminDashboardPage() {
             color="indigo"
             icon={<BookOpen className="h-6 w-6" />}
             loading={loading}
+            variant="gradient"
           />
           <StatCard
             title="Learners"
@@ -115,6 +118,7 @@ export default function AdminDashboardPage() {
             color="emerald"
             icon={<GraduationCap className="h-6 w-6" />}
             loading={loading}
+            variant="gradient"
           />
           <StatCard
             title="Tutors"
@@ -123,6 +127,7 @@ export default function AdminDashboardPage() {
             color="orange"
             icon={<Activity className="h-6 w-6" />}
             loading={loading}
+            variant="gradient"
           />
         </div>
 
@@ -218,36 +223,7 @@ export default function AdminDashboardPage() {
   );
 }
 
-function StatCard({ title, value, description, icon, color, loading }: any) {
-  const colors: any = {
-    blue: 'from-blue-500 to-blue-600 shadow-blue-100 text-blue-600 bg-blue-50',
-    indigo: 'from-indigo-500 to-indigo-600 shadow-indigo-100 text-indigo-600 bg-indigo-50',
-    emerald: 'from-emerald-500 to-emerald-600 shadow-emerald-100 text-emerald-600 bg-emerald-50',
-    orange: 'from-orange-500 to-orange-600 shadow-orange-100 text-orange-600 bg-orange-50',
-  };
-
-  return (
-    <Card className="border-none shadow-lg shadow-gray-100 rounded-3xl overflow-hidden hover:scale-[1.02] transition-transform duration-300">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className={`p-3 rounded-2xl ${colors[color].split(' shadow')[0]} text-white shadow-lg ${colors[color].split('text-')[0].split(' shadow-')[1]}`}>
-            {icon}
-          </div>
-        </div>
-        <div>
-          {loading ? (
-            <div className="h-8 w-20 bg-gray-200 rounded-lg animate-pulse mb-1" />
-          ) : (
-            <div className="text-3xl font-black text-gray-900">{value}</div>
-          )}
-          <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mt-1">{title}</p>
-          <p className="text-xs text-gray-400 mt-2 font-medium">{description}</p>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
+// QuickActionLink and TrendItem are kept as local helpers for now
 function QuickActionLink({ href, title, description, icon, color }: any) {
   const colors: any = {
     blue: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600',

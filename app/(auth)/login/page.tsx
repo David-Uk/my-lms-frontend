@@ -34,13 +34,20 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('[Login] Form submitted');
     setGeneralError('');
 
-    if (!validate()) return;
+    if (!validate()) {
+      console.log('[Login] Validation failed', errors);
+      return;
+    }
 
+    console.log('[Login] Validation passed, making API call...');
     setIsLoading(true);
     try {
+      console.log('[Login] Calling api.post(/auth/login)');
       let response = await api.post<any>('/auth/login', formData);
+      console.log('[Login] API call completed, response received:', response);
 
       // Auto-parse if response is a string (final safety layer)
       if (typeof response === 'string') {
@@ -67,17 +74,8 @@ export default function LoginPage() {
 
       login(authToken, userData);
 
-      // Redirect based on role with safety check
       const role = userData.role;
-      console.log('[Login] Redirecting based on role:', role);
 
-      if (!role) {
-        console.log('[Login] No role found, redirecting to home');
-        router.push('/');
-        return;
-      }
-
-      // Use window.location for full page redirect to ensure cookie is available to middleware
       let redirectUrl: string;
       switch (role) {
         case 'superadmin':
@@ -95,12 +93,8 @@ export default function LoginPage() {
         default:
           redirectUrl = '/';
       }
-      console.log('[Login] Full redirect to:', redirectUrl);
 
-      // Small delay to ensure cookie is committed before navigation
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 100);
+      router.push(redirectUrl);
     } catch (error) {
       if (error && typeof error === 'object' && 'message' in error) {
         setGeneralError((error as { message: string }).message);

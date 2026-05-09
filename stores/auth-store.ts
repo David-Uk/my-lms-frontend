@@ -89,6 +89,10 @@ export const useAuthStore = create<AuthState>()(
             state.user = null;
             state.isAuthenticated = false;
             removeToken();
+          } else if (state.token) {
+            // Re-sync the direct localStorage key and cookie so getToken() and
+            // the middleware cookie check both work after a page refresh
+            setToken(state.token);
           }
         }
       },

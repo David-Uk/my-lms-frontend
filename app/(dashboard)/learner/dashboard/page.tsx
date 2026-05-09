@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { BookOpen, Award, Clock, Target, ArrowRight, Play, Zap, Sparkles, Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { StatCard } from '@/components/dashboard/stat-card';
 
 interface LearnerStats {
   totalEnrolled: number;
@@ -241,31 +242,6 @@ export default function LearnerDashboardPage() {
   );
 }
 
-function StatCard({ title, value, description, icon, color }: any) {
-  const colors: any = {
-    blue: 'bg-blue-50 text-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
-  };
-
-  return (
-    <Card className="border-none shadow-md hover:shadow-xl transition-all duration-300 rounded-[2rem] overflow-hidden border border-gray-50">
-      <CardContent className="p-8 flex items-center gap-6">
-        <div className={`p-4 rounded-2xl ${colors[color]} shadow-inner`}>
-          {icon}
-        </div>
-        <div>
-          <div className="text-3xl font-black text-gray-900 leading-none">{value}</div>
-          <div className="mt-1">
-            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">{title}</p>
-            <p className="text-[10px] text-gray-400 font-bold mt-1">{description}</p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
 
 function CourseProgressCard({ id, title, progress, lastAccessed, gradient }: { id: string; title: string; progress: number; lastAccessed: string; gradient: string }) {
   return (

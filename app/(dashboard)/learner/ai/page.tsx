@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { Brain, Sparkles, FileAudio, CheckCircle2, AlertCircle } from 'lucide-react';
+import { QuizPlayer } from '@/components/ai/quiz-player';
+import { FlashcardDeck } from '@/components/ai/flashcard-deck';
 
 export default function AIFeaturesPage() {
   const [activeTab, setActiveTab] = useState<'quiz' | 'flashcards' | 'transcribe'>('quiz');
@@ -206,30 +208,10 @@ export default function AIFeaturesPage() {
                 </CardHeader>
                 <CardContent className="p-6 overflow-y-auto max-h-[600px]">
                   {activeTab === 'quiz' && result.questions && (
-                    <div className="space-y-6">
-                      {result.questions.map((q: any, i: number) => (
-                        <div key={i} className="p-4 bg-gray-50 rounded-2xl border">
-                          <p className="font-bold mb-3">{i + 1}. {q.question}</p>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                            {q.options && typeof q.options === 'object' && Object.entries(q.options).map(([key, val]) => (
-                              <div key={key} className="p-2 bg-white rounded-lg text-sm border">
-                                {String(val)}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <QuizPlayer questions={result.questions} />
                   )}
                   {activeTab === 'flashcards' && result.flashcards && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {result.flashcards.map((card: any, i: number) => (
-                        <div key={i} className="p-6 bg-gradient-to-br from-white to-gray-50 rounded-2xl border shadow-sm aspect-video flex flex-col items-center justify-center text-center cursor-pointer hover:shadow-md transition-all">
-                          <p className="text-xs text-blue-600 font-bold mb-2 uppercase tracking-widest">Question</p>
-                          <p className="font-bold">{card.front}</p>
-                        </div>
-                      ))}
-                    </div>
+                    <FlashcardDeck flashcards={result.flashcards} />
                   )}
                   {activeTab === 'transcribe' && result.transcription && (
                     <div className="prose prose-sm max-w-none">

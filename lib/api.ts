@@ -1,4 +1,5 @@
 import { JWTPayload, ApiError, ApiRequestError } from '@/types';
+import { toast } from '@/stores/toast-store';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
@@ -53,16 +54,7 @@ export function setToken(token: string): void {
   if (typeof window !== 'undefined') {
     // Write to the direct key (read by getToken)
     localStorage.setItem('token', token);
-    // Keep the Zustand persisted store in sync
-    try {
-      const raw = localStorage.getItem('auth-storage');
-      const parsed = raw ? (JSON.parse(raw) as { state?: Record<string, unknown> }) : { state: {} };
-      parsed.state = { ...(parsed.state || {}), token };
-      localStorage.setItem('auth-storage', JSON.stringify(parsed));
-    } catch {
-      // Non-fatal
-    }
-    // Set cookie for server-side access
+    // Set cookie for server-side middleware access
     const isSecure = window.location.protocol === 'https:';
     const secureFlag = isSecure ? '; Secure' : '';
     document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax${secureFlag}`;
@@ -111,9 +103,10 @@ export function decodeToken(token: string): JWTPayload | null {
   }
 }
 
-export function isTokenExpired(token: string): boolean {
+export function isTokenExpired(token: string | null | undefined): boolean {
+  if (!token) return false; // no token is not the same as an expired token
   const decoded = decodeToken(token);
-  if (!decoded) return true;
+  if (!decoded) return true; // unparseable token is treated as expired
   return decoded.exp * 1000 < Date.now();
 }
 
@@ -147,6 +140,7 @@ async function apiClient<T>(
   endpoint: string,
   options: FetchOptions = {}
 ): Promise<T> {
+  console.log(`[apiClient] Called with endpoint: ${endpoint}`, options);
   const {
     useCache = false,
     cacheKey,
@@ -166,13 +160,21 @@ async function apiClient<T>(
   }
 
   // Get token and check expiration
+  // SKIP expiration check for login/signup endpoints to prevent blocking re-authentication
+  const isAuthEndpoint = endpoint.includes('/auth/login') || endpoint.includes('/auth/signup');
+  
   const token = await getToken();
-  if (token && isTokenExpired(token)) {
+  if (token && isTokenExpired(token) && !isAuthEndpoint) {
+    console.log('[apiClient] Token expired, removing and redirecting...');
     await removeToken();
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
-    throw new Error('Session expired. Please login again.');
+    const msg = 'Session expired. Please login again.';
+    if (typeof window !== 'undefined') {
+      toast.error(msg);
+    }
+    throw new Error(msg);
   }
 
   // Build headers
@@ -200,7 +202,11 @@ async function apiClient<T>(
     // True network failure — server unreachable, DNS failure, CORS preflight blocked, etc.
     const msg = networkError instanceof Error ? networkError.message : String(networkError);
     console.error(`[apiClient] Network failure for ${url}:`, msg);
-    throw new Error(`Cannot reach the server at ${API_BASE_URL}. Is the backend running? (${msg})`);
+    const errorMsg = `Cannot reach the server. Is the backend running?`;
+    if (typeof window !== 'undefined') {
+      toast.error(errorMsg);
+    }
+    throw new Error(`${errorMsg} (${msg})`);
   }
 
   // Handle 401 - redirect to login
@@ -209,7 +215,11 @@ async function apiClient<T>(
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
-    throw new Error('Unauthorized. Please login again.');
+    const msg = 'Unauthorized. Please login again.';
+    if (typeof window !== 'undefined') {
+      toast.error(msg);
+    }
+    throw new Error(msg);
   }
 
   // Handle 403
@@ -234,10 +244,23 @@ async function apiClient<T>(
   if (!response.ok) {
     const message =
       (typeof data === 'object' && data?.message) ||
-      bodyText ||
       `HTTP ${response.status}`;
     const errors = typeof data === 'object' ? data?.errors : undefined;
+    
+    // Show error toast
+    if (typeof window !== 'undefined') {
+      toast.error(message);
+    }
+    
     throw new ApiRequestError(response.status, message, errors);
+  }
+
+  // Show success toast for write operations
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(fetchOptions.method || 'GET')) {
+    if (typeof window !== 'undefined') {
+      const successMsg = (typeof data === 'object' && data?.message) || 'Operation successful';
+      toast.success(successMsg);
+    }
   }
 
   // Handle 204 No Content
@@ -304,10 +327,17 @@ export const api = {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       const message = errorData.message || `HTTP error! status: ${response.status}`;
+      if (typeof window !== 'undefined') {
+        toast.error(message);
+      }
       throw new ApiRequestError(response.status, message, errorData.errors);
     }
 
-    return response.json() as Promise<T>;
+    const data = await response.json();
+    if (typeof window !== 'undefined') {
+      toast.success(data?.message || 'File uploaded successfully');
+    }
+    return data as T;
   },
 };
 

@@ -16,7 +16,9 @@ import {
   Brain,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
+import { Logo } from '@/components/ui/logo';
 
 interface NavItem {
   label: string;
@@ -30,12 +32,10 @@ const adminNavItems: NavItem[] = [
   { label: 'Learners', href: '/admin/learners', icon: <GraduationCap className="h-5 w-5" /> },
   { label: 'Tutors', href: '/admin/tutors', icon: <UserCircle className="h-5 w-5" /> },
   { label: 'Courses', href: '/admin/courses', icon: <BookOpen className="h-5 w-5" /> },
+  { label: 'AI Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles className="h-5 w-5" /> },
   { label: 'AI Performance', href: '/admin/ai-performance', icon: <Brain className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
 ];
-
-import { Logo } from '@/components/ui/logo';
-// ... existing imports
 
 export function AdminSidebar() {
   const pathname = usePathname();

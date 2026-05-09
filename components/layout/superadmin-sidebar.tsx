@@ -12,11 +12,11 @@ import {
   BookOpen,
   Settings,
   LogOut,
-  Crown,
   Server,
   FileText,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 
 interface NavItem {
@@ -29,9 +29,10 @@ const superAdminNavItems: NavItem[] = [
   { label: 'Dashboard', href: '/superadmin/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
   { label: 'Manage Admins', href: '/superadmin/admins', icon: <Shield className="h-5 w-5" /> },
   { label: 'All Users', href: '/admin/users', icon: <Users className="h-5 w-5" /> },
-  { label: 'Learners', href: '/admin/learners', icon: <Crown className="h-5 w-5" /> },
+  { label: 'Learners', href: '/admin/learners', icon: <BookOpen className="h-5 w-5" /> },
   { label: 'Tutors', href: '/admin/tutors', icon: <Users className="h-5 w-5" /> },
   { label: 'Courses', href: '/admin/courses', icon: <BookOpen className="h-5 w-5" /> },
+  { label: 'AI Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles className="h-5 w-5" /> },
   { label: 'System', href: '/superadmin/system', icon: <Server className="h-5 w-5" /> },
   { label: 'Audit Logs', href: '/superadmin/audit', icon: <FileText className="h-5 w-5" /> },
   { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
@@ -47,51 +48,45 @@ export function SuperAdminSidebar() {
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-gradient-to-b from-gray-900 to-gray-800 border-r border-gray-700 shadow-xl transition-all duration-300',
+        'fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-100 shadow-xl shadow-gray-200/50 transition-all duration-300',
         isCollapsed ? 'w-20' : 'w-64'
       )}
     >
       <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-20 items-center px-4 border-b border-gray-700">
+        <div className="flex h-20 items-center px-4">
           <Link href="/superadmin/dashboard" className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-amber-500 to-orange-600 rounded-xl flex-shrink-0">
-              <Crown className="h-5 w-5 text-white" />
-            </div>
-            {!isCollapsed && (
-              <div className="flex-1">
-                <Logo className="h-8 w-auto" />
-                <p className="text-xs text-amber-400 font-bold uppercase tracking-widest">Super Admin</p>
+            {isCollapsed ? (
+              <div className="p-2 bg-[#004D20] rounded-xl flex-shrink-0">
+                <Logo iconOnly className="h-5 w-5 text-white" />
               </div>
+            ) : (
+              <Logo />
             )}
           </Link>
         </div>
 
-        {/* Collapse Toggle */}
         <div className="flex justify-end p-2">
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-800 hover:text-white transition-colors"
+            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
           >
             {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
           </button>
         </div>
 
-        {/* User Info */}
         {!isCollapsed && (
-          <div className="px-6 py-4 border-b border-gray-700">
-            <p className="text-sm text-gray-400">Logged in as</p>
-            <p className="text-white font-bold truncate">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-sm text-gray-500">Logged in as</p>
+            <p className="text-gray-900 font-bold truncate">
               {user?.firstName} {user?.lastName}
             </p>
-            <p className="text-xs text-amber-400 font-medium uppercase tracking-wider">
+            <p className="text-xs text-[#004D20] font-medium uppercase tracking-wider">
               {user?.role}
             </p>
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 space-y-1 p-4 overflow-y-auto">
+        <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
           {superAdminNavItems.map((item) => (
             <Link
               key={item.href}
@@ -99,8 +94,8 @@ export function SuperAdminSidebar() {
               className={cn(
                 'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-300',
                 pathname === item.href || pathname.startsWith(item.href + '/')
-                  ? 'bg-amber-600 text-white shadow-lg shadow-amber-900/20'
-                  : 'text-gray-400 hover:bg-gray-800 hover:text-white'
+                  ? 'bg-[#004D20] text-white shadow-lg shadow-green-900/20'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-[#004D20]'
               )}
               title={isCollapsed ? item.label : undefined}
             >
@@ -108,7 +103,7 @@ export function SuperAdminSidebar() {
                 "p-1.5 rounded-lg transition-colors flex-shrink-0",
                 pathname === item.href || pathname.startsWith(item.href + '/')
                   ? "bg-white/10"
-                  : "bg-gray-800 group-hover:bg-gray-700"
+                  : "bg-gray-50 group-hover:bg-green-50"
               )}>
                 {item.icon}
               </div>
@@ -117,12 +112,11 @@ export function SuperAdminSidebar() {
           ))}
         </nav>
 
-        {/* Logout */}
-        <div className="border-t border-gray-700 p-4">
+        <div className="border-t border-gray-200 p-4">
           <button
             onClick={logout}
             className={cn(
-              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors",
+              "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors",
               isCollapsed ? "justify-center" : "w-full"
             )}
             title={isCollapsed ? "Logout" : undefined}

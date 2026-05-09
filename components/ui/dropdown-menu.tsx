@@ -5,6 +5,8 @@ import { cn } from '@/utils/cn';
 
 interface DropdownMenuProps {
   children: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 const DropdownMenuContext = React.createContext<{
@@ -12,8 +14,19 @@ const DropdownMenuContext = React.createContext<{
   setOpen: (open: boolean) => void;
 }>({ open: false, setOpen: () => {} });
 
-function DropdownMenu({ children }: DropdownMenuProps) {
-  const [open, setOpen] = React.useState(false);
+function DropdownMenu({ children, open: controlledOpen, onOpenChange }: DropdownMenuProps) {
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  
+  const setOpen = (newOpen: boolean) => {
+    if (isControlled) {
+      onOpenChange?.(newOpen);
+    } else {
+      setInternalOpen(newOpen);
+    }
+  };
+
   return (
     <DropdownMenuContext.Provider value={{ open, setOpen }}>
       <div className="relative">{children}</div>
@@ -30,9 +43,13 @@ function DropdownMenuTrigger({ children, asChild }: DropdownMenuTriggerProps) {
   const { setOpen } = React.useContext(DropdownMenuContext);
   
   if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(children, {
-      onClick: () => setOpen(true),
-    } as any);
+    const child = children as React.ReactElement<{ onClick?: () => void }>;
+    return React.cloneElement(child, {
+      onClick: () => {
+        child.props.onClick?.();
+        setOpen(true);
+      },
+    });
   }
 
   return (
@@ -106,12 +123,13 @@ function DropdownMenuItem({ children, className, onClick, asChild }: DropdownMen
   };
 
   if (asChild && React.isValidElement(children)) {
+    const child = children as React.ReactElement<{ onClick?: () => void }>;
     return (
       <div className={cn(
         'relative flex cursor-pointer select-none items-center rounded-lg px-2 py-1.5 text-sm outline-none transition-colors hover:bg-gray-100 focus:bg-gray-100',
         className
       )}>
-        {React.cloneElement(children, { onClick: handleClick } as any)}
+        {React.cloneElement(child, { onClick: handleClick })}
       </div>
     );
   }
@@ -129,9 +147,14 @@ function DropdownMenuItem({ children, className, onClick, asChild }: DropdownMen
   );
 }
 
+function DropdownMenuSeparator() {
+  return <div className="-mx-1 my-1 h-px bg-gray-200" />;
+}
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
 };

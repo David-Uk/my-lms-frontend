@@ -13,7 +13,7 @@ export default function SuperAdminLayout({ children }: SuperAdminLayoutProps) {
   const { isCollapsed } = useSidebarStore();
 
   return (
-    <div className="min-h-screen bg-gray-900">
+    <div className="min-h-screen bg-gray-50">
       <SuperAdminSidebar />
       <div className={cn('transition-all duration-300', isCollapsed ? 'lg:ml-20' : 'lg:ml-64')}>
         <Header />
