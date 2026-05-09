@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { BookOpen, Award, Clock, Target, ArrowRight, Play, Zap, Sparkles, Loader2, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,11 +79,9 @@ export default function LearnerDashboardPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
     );
   }
 
@@ -97,8 +94,7 @@ export default function LearnerDashboardPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">My Journey</h1>
@@ -238,7 +234,6 @@ export default function LearnerDashboardPage() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

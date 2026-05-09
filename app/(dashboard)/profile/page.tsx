@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,8 +83,7 @@ export default function ProfilePage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-2xl">
+    <div className="max-w-2xl">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">My Profile</h1>
 
         <Card>
@@ -174,6 +172,5 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

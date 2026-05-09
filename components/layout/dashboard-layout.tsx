@@ -6,6 +6,7 @@ import { useSidebarStore } from '@/stores/sidebar-store';
 import { AdminSidebar } from './admin-sidebar';
 import { TutorSidebar } from './tutor-sidebar';
 import { LearnerSidebar } from './learner-sidebar';
+import { SuperAdminSidebar } from './superadmin-sidebar';
 import { Header } from './header';
 
 interface DashboardLayoutProps {
@@ -23,7 +24,10 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
   const renderSidebar = () => {
     if (isLoading) return null;
 
-    if (userRole === 'admin' || userRole === 'superadmin') {
+    if (userRole === 'superadmin') {
+      return <SuperAdminSidebar />;
+    }
+    if (userRole === 'admin') {
       return <AdminSidebar />;
     }
     if (userRole === 'tutor') {

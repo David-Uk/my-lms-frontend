@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { api } from '@/lib/api';
 import { useAuth } from '@/stores/auth-store';
@@ -92,8 +91,7 @@ export default function TutorDashboardPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+    <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-emerald-50 rounded-3xl shadow-lg">
@@ -348,9 +346,8 @@ export default function TutorDashboardPage() {
               )}
             </CardContent>
           </Card>
-        </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

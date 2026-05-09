@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Users, BookOpen, GraduationCap, Award, ArrowRight, Sparkles, TrendingUp, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -78,8 +77,7 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+    <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h1 className="text-4xl font-black text-gray-900 tracking-tight">System Overview</h1>
@@ -217,9 +215,8 @@ export default function AdminDashboardPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 

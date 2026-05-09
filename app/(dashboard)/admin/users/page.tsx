@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -237,8 +236,7 @@ export default function AdminUsersPage() {
   const activeUsers = users.filter(u => u.status === 'active').length;
 
   return (
-    <DashboardLayout>
-      <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
+    <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="p-4 bg-blue-50 rounded-3xl shadow-lg">
@@ -671,9 +669,8 @@ export default function AdminUsersPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
 
