@@ -1,5 +1,7 @@
 'use client';
 
+// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+
 import { useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -83,11 +85,21 @@ const DIFFICULTY_LEVELS = [
 export default function GenerateQuizPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Tab state: 'list' shows past quizzes, 'new' shows generator
+  const [tab, setTab] = useState<'list' | 'new'>('new');
+  const [pastQuizzes, setPastQuizzes] = useState<any[]>([]);
+  const [loadingQuizzes, setLoadingQuizzes] = useState(false);
+
+  // Existing step state for new quiz flow
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+  const [step, setStep] = useState<'configure' | 'preview' | 'invite' | 'complete'>('configure' as const);
   
-  const [step, setStep] = useState<'configure' | 'preview' | 'invite' | 'complete'>('configure');
+  // Existing states continued (moved above)
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSendingInvites, setIsSendingInvites] = useState(false);
-  const [generatedQuiz, setGeneratedQuiz] = useState<GenerateQuizResponse | null>(null);
+  type QuizWithDetails = { quiz: { id: string; title?: string; description?: string; timeAllocated?: number; totalMarks?: number; passMark?: number; startDateTime?: string; endDateTime?: string; durationMinutes?: number }; questions: any[] };
+  const [generatedQuiz, setGeneratedQuiz] = useState<QuizWithDetails | null>(null);
   const [error, setError] = useState('');
   
   const getDefaultEndDate = () => {
@@ -186,18 +198,55 @@ export default function GenerateQuizPage() {
 
       const response = await localResponse.json();
       
+      // Step 2: Save the generated quiz to the database immediately so we have a real link
+      const token = await getToken();
+      const saveResponse = await fetch('/api/quiz/invite', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          quizId: response.quiz.id,
+          participants: [], // No participants yet
+          quiz: {
+            ...response.quiz,
+            questions: response.questions,
+          },
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        let errorMsg = 'Failed to save generated quiz';
+        try {
+          const errorData = await saveResponse.json();
+          console.error('Save failed details:', errorData);
+          errorMsg = errorData.message || errorMsg;
+        } catch (e) {
+          const errorText = await saveResponse.text().catch(() => 'No response body');
+          console.error('Save failed status:', saveResponse.status, 'Body:', errorText);
+          errorMsg = `Server error (${saveResponse.status}): ${errorText.substring(0, 100)}`;
+        }
+        throw new Error(errorMsg);
+      }
+
+      const saveData = await saveResponse.json();
+      
       const questions = response.questions.map((q: Record<string, unknown>, i: number) => ({
-        id: `q_${Date.now()}_${i}`,
-        quizId: response.quiz.id,
+        id: q.id || `q_${Date.now()}_${i}`,
+        quizId: saveData.quizId,
         type: q.type || 'single_option',
         question: q.question,
         options: Array.isArray(q.options) ? q.options : [],
         correctAnswer: q.correctAnswer,
-        marks: Math.floor(formData.totalMarks / formData.numberOfQuestions),
+        marks: q.marks || Math.floor(formData.totalMarks / formData.numberOfQuestions),
         timeLimit: null,
       }));
 
-      setGeneratedQuiz({ quiz: response.quiz, questions });
+      setGeneratedQuiz({ 
+        quiz: { ...response.quiz, id: saveData.quizId }, 
+        questions 
+      });
       setStep('preview');
     } catch (err) {
       console.error('Failed to generate quiz:', err);
@@ -345,9 +394,9 @@ export default function GenerateQuizPage() {
 
       const data = await response.json();
       setParticipants(prev => prev.map(p => ({ ...p, invited: true })));
+      // No need to update quizId here as it was already saved in handleGenerateQuiz
       setGeneratedQuiz(prev => prev ? { 
         ...prev, 
-        quiz: { ...prev.quiz, id: data.quizId },
         invites: data.invites 
       } : null);
       setStep('complete');
@@ -418,19 +467,25 @@ export default function GenerateQuizPage() {
         {step !== 'configure' && (
           <div className="flex items-center gap-2">
             <button
-              onClick={() => step === 'complete' ? setStep('invite') : setStep('configure')}
+              onClick={() => {
+                if (step === 'complete') {
+                  setStep('invite');
+                } else {
+                  setStep('configure');
+                }
+              }}
               className="flex items-center gap-2 text-sm text-gray-500 hover:text-gray-700"
             >
               <ArrowLeft className="h-4 w-4" />
               Back
             </button>
-             <div className="flex-1 flex items-center justify-center gap-4">
-               <div className={`flex items-center gap-2 ${step !== 'configure' ? 'text-purple-600' : 'text-gray-400'}`}>
-                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step !== 'configure' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
-                   {step === 'configure' ? '1' : <CheckCircle2 className="h-5 w-5" />}
-                 </div>
-                 <span className="font-medium">Configure</span>
-               </div>
+<div className="flex-1 flex items-center justify-center gap-4">
+                <div className={`flex items-center gap-2 ${(step as string) !== 'configure' ? 'text-purple-600' : 'text-gray-400'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${(step as string) !== 'configure' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
+                    {(step as string) === 'configure' ? '1' : <CheckCircle2 className="h-5 w-5" />}
+                  </div>
+                  <span className="font-medium">Configure</span>
+                </div>
                <div className="w-12 h-0.5 bg-gray-200" />
                <div className={`flex items-center gap-2 ${step === 'preview' || step === 'invite' || step === 'complete' ? 'text-purple-600' : 'text-gray-400'}`}>
                  <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${step === 'preview' || step === 'invite' || step === 'complete' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}>
@@ -456,8 +511,8 @@ export default function GenerateQuizPage() {
           </div>
         )}
 
-        {step === 'configure' && (
-          <Card className="border-none shadow-2xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden">
+          {step === 'configure' && (
+            <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-8">
               <div className="flex items-center gap-3">
                 <Brain className="h-6 w-6 text-purple-600" />
@@ -672,23 +727,42 @@ export default function GenerateQuizPage() {
                   </div>
                   <div>
                     <CardTitle className="text-xl font-black">Quiz Preview</CardTitle>
-                    <p className="text-sm text-gray-500">Review your quiz before inviting participants</p>
+                    <p className="text-sm text-gray-500">Review your quiz and access link before inviting participants</p>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" onClick={copyQuizId} className="gap-2 rounded-xl">
-                  <Copy className="h-4 w-4" />
-                  Copy ID
-                </Button>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={copyInviteLink} className="gap-2 rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50">
+                    <Copy className="h-4 w-4" />
+                    Copy Link
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={copyQuizId} className="gap-2 rounded-xl">
+                    <Copy className="h-4 w-4" />
+                    Copy ID
+                  </Button>
+                </div>
               </div>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-8">
+              <div className="mb-8 p-6 bg-purple-50 rounded-3xl border-2 border-purple-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-black text-purple-900 uppercase tracking-widest">Learner Access Link</h3>
+                  <span className="text-[10px] bg-purple-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Live Link</span>
+                </div>
+                <code className="text-xs bg-white px-4 py-3 rounded-xl border border-purple-200 font-mono block break-all text-purple-700">
+                  {typeof window !== 'undefined' ? `${window.location.origin}/quiz/take/${generatedQuiz.quiz.id}` : ''}
+                </code>
+                <p className="text-xs text-purple-500 italic">
+                  * This link is active. You can share it directly or visit it to see the learner view.
+                </p>
+              </div>
+
               <div className="space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="w-24 h-24 rounded-full flex items-center justify-center bg-purple-100">
                     <Brain className="h-12 w-12 text-purple-600" />
                   </div>
                   <div className="flex-1">
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">{generatedQuiz.quiz.title}</h2>
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">{(generatedQuiz.quiz as { title?: string }).title}</h2>
                     <p className="text-gray-600">{generatedQuiz.quiz.description || 'No description provided'}</p>
                     <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
                       <div className="flex items-center gap-2">
@@ -723,21 +797,17 @@ export default function GenerateQuizPage() {
                           {question.options && question.options.length > 0 ? (
                             <div className="space-y-2">
                               <div className="text-sm font-medium text-gray-700 mb-1">Options:</div>
-                              {question.options.map((option, optIndex) => {
+                              {question.options?.map((option: string, optIndex: number) => {
                                 const optionLabel = String.fromCharCode(97 + optIndex);
                                 const isCorrect = Array.isArray(question.correctAnswer)
-                                  ? question.correctAnswer.some(ans => 
-                                      (typeof ans === 'object' && ans.text === (typeof option === 'string' ? option : option.text)) ||
-                                      (typeof ans === 'string' && ans === (typeof option === 'string' ? option : option.text))
-                                    )
-                                  : (typeof question.correctAnswer === 'object' && question.correctAnswer.text === (typeof option === 'string' ? option : option.text)) ||
-                                    (typeof question.correctAnswer === 'string' && question.correctAnswer === (typeof option === 'string' ? option : option.text));
+                                  ? question.correctAnswer.some((ans: any) => ans === option)
+                                  : question.correctAnswer === option;
                                 
                                 return (
                                   <div key={optIndex} className="flex items-center gap-2 pl-4">
                                     <div className={`w-3 h-3 rounded-full border-2 ${isCorrect ? 'border-green-500 bg-green-500' : 'border-gray-300 bg-gray-50'}`} />
                                     <span className={`flex-1 ${isCorrect ? 'text-green-700 font-bold' : ''}`}>
-                                      {optionLabel}) {typeof option === 'string' ? option : option.text}
+                                      {optionLabel}) {option}
                                       {isCorrect && <span className="ml-2 text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full uppercase tracking-widest font-black">Correct Answer</span>}
                                     </span>
                                   </div>
@@ -769,14 +839,14 @@ export default function GenerateQuizPage() {
                       <Calendar className="h-4 w-4 text-purple-600" />
                       Available From
                     </label>
-                    <p className="text-gray-700">{new Date(generatedQuiz.quiz.startDateTime).toLocaleString()}</p>
+                    <p className="text-gray-700">{generatedQuiz.quiz.startDateTime ? new Date(generatedQuiz.quiz.startDateTime).toLocaleString() : 'N/A'}</p>
                   </div>
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
                       <Calendar className="h-4 w-4 text-purple-600" />
                       Available Until
                     </label>
-                    <p className="text-gray-700">{new Date(generatedQuiz.quiz.endDateTime).toLocaleString()}</p>
+                    <p className="text-gray-700">{generatedQuiz.quiz.endDateTime ? new Date(generatedQuiz.quiz.endDateTime).toLocaleString() : 'N/A'}</p>
                   </div>
                   <div className="space-y-3">
                     <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
@@ -807,7 +877,7 @@ export default function GenerateQuizPage() {
             </CardFooter>
           </Card>
         )}
-        {step === 'invite' && generatedQuiz && (
+{step === 'invite' && generatedQuiz && (
           <div className="space-y-6">
             <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 p-6">

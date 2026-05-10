@@ -17,21 +17,35 @@ export default function QuizAccessPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [quizInfo, setQuizInfo] = useState<any>(null);
+  const [quizLoadError, setQuizLoadError] = useState('');
 
   useEffect(() => {
-    // Optionally fetch public quiz info (title, description)
     const fetchQuizInfo = async () => {
+      if (!quizId) return;
+      
       try {
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/quizzes/standalone/${quizId}/public`);
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+        const url = `${apiUrl}/quizzes/standalone/${quizId}/public`;
+        console.log('[QuizAccess] Fetching quiz info from:', url);
+        
+        const response = await fetch(url);
+        console.log('[QuizAccess] Response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('[QuizAccess] Quiz info loaded:', data);
           setQuizInfo(data);
+        } else {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('[QuizAccess] Failed to fetch quiz info:', response.status, errorData);
+          setQuizLoadError(errorData.message || 'Quiz not found');
         }
       } catch (err) {
-        console.error('Failed to fetch quiz info:', err);
+        console.error('[QuizAccess] Network error fetching quiz info:', err);
+        setQuizLoadError('Unable to connect to server');
       }
     };
-    if (quizId) fetchQuizInfo();
+    fetchQuizInfo();
   }, [quizId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -98,6 +112,12 @@ export default function QuizAccessPage() {
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {quizLoadError && (
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-2xl">
+              <p className="text-red-700 text-sm font-medium">{quizLoadError}</p>
             </div>
           )}
 

@@ -13,9 +13,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { quizId, participants, quiz } = body;
 
-    if (!quizId || !participants || participants.length === 0) {
+    if (!quizId) {
       return NextResponse.json(
-        { message: 'Quiz ID and participants are required' },
+        { message: 'Quiz ID is required' },
         { status: 400 }
       );
     }
@@ -40,97 +40,112 @@ export async function POST(request: NextRequest) {
       'Authorization': `Bearer ${token}`,
     };
 
-    // Step 1: Create the quiz in the database
-    console.log('Step 1: Creating quiz...');
-    const createQuizResponse = await fetch(`${API_BASE_URL}/quizzes/standalone`, {
-      method: 'POST',
+    // Step 1: Create the quiz in the database (only if it doesn't already exist)
+    let quizIdForDb = quizId;
+    let finalQuizData = null;
+    console.log(`Checking if quiz ${quizId} exists...`);
+    
+    const checkResponse = await fetch(`${API_BASE_URL}/quizzes/standalone/${quizId}`, {
+      method: 'GET',
       headers: authHeaders,
-      body: JSON.stringify({
-        title: quiz.title,
-        description: quiz.title,
-        timeAllocated: quiz.durationMinutes || quiz.timeAllocated || 60,
-        passMark: quiz.passMark,
-        startDateTime: quiz.startDateTime,
-        endDateTime: quiz.endDateTime,
-        durationMinutes: quiz.durationMinutes,
-        totalMarks: quiz.totalMarks,
-      }),
     });
 
-    if (!createQuizResponse.ok) {
-      let errorData = '';
-      try {
-        errorData = await createQuizResponse.json();
-      } catch (e) {
-        errorData = await createQuizResponse.text();
-      }
-      console.error('Quiz creation failed:', createQuizResponse.status, errorData);
-      throw new Error(`Failed to create quiz: ${JSON.stringify(errorData)}`);
-    }
+    if (checkResponse.ok) {
+      console.log('Quiz already exists, skipping creation.');
+      finalQuizData = await checkResponse.json();
+    } else {
+      console.log('Quiz does not exist, creating...');
+      const createQuizResponse = await fetch(`${API_BASE_URL}/quizzes/standalone`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          title: quiz.title,
+          description: quiz.description || quiz.title,
+          timeAllocated: quiz.durationMinutes || quiz.timeAllocated || 60,
+          passMark: quiz.passMark,
+          startDateTime: quiz.startDateTime,
+          endDateTime: quiz.endDateTime,
+          durationMinutes: quiz.durationMinutes,
+          totalMarks: quiz.totalMarks,
+        }),
+      });
 
-    const createdQuiz = await createQuizResponse.json();
-    const quizIdForDb = createdQuiz.quiz?.id || createdQuiz.id;
-
-    if (!quizIdForDb) {
-      throw new Error('Failed to create quiz - no quiz ID returned');
-    }
-
-    console.log('Quiz created with ID:', quizIdForDb);
-
-    // Step 2: Add questions to the quiz
-    console.log('Step 2: Adding questions...');
-    const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
-    for (let i = 0; i < questions.length; i++) {
-      const question = questions[i];
-      try {
-        const qRes = await fetch(`${API_BASE_URL}/quizzes/standalone/${quizIdForDb}/questions`, {
-          method: 'POST',
-          headers: authHeaders,
-          body: JSON.stringify({
-            type: question.type,
-            question: question.question,
-            options: question.options,
-            correctAnswer: question.correctAnswer,
-            marks: question.marks,
-          }),
-        });
-        if (!qRes.ok) {
-          console.warn(`Failed to add question ${i + 1}/${questions.length}:`, await qRes.text());
-          // Continue with other questions even if one fails
-        } else {
-          console.log(`Added question ${i + 1}/${questions.length}`);
+      if (!createQuizResponse.ok) {
+        let errorData = '';
+        try {
+          errorData = await createQuizResponse.json();
+        } catch (e) {
+          errorData = await createQuizResponse.text();
         }
-      } catch (qError) {
-        console.warn(`Error adding question ${i + 1}:`, qError);
-        // Continue with other questions
+        console.error('Quiz creation failed:', createQuizResponse.status, errorData);
+        throw new Error(`Failed to create quiz: ${JSON.stringify(errorData)}`);
       }
+
+      finalQuizData = await createQuizResponse.json();
+      quizIdForDb = finalQuizData.quiz?.id || finalQuizData.id;
+      console.log('Quiz created with ID:', quizIdForDb);
     }
 
-    // Step 3: Invite participants
-    console.log('Step 3: Inviting participants...');
-    const inviteResponse = await fetch(`${API_BASE_URL}/quizzes/standalone/${quizIdForDb}/participants`, {
-      method: 'POST',
-      headers: authHeaders,
-      body: JSON.stringify({
-        participants: participants.map((p: { email: string; firstName?: string; lastName?: string }) => ({
-          name: `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email.split('@')[0],
-          email: p.email,
-        })),
-      }),
-    });
-
-    if (!inviteResponse.ok) {
-      let errorData = '';
-      try {
-        errorData = await inviteResponse.json();
-      } catch (e) {
-        errorData = await inviteResponse.text();
+    // Step 2: Add questions to the quiz (if new or currently empty)
+    const existingQuestions = finalQuizData?.questions || finalQuizData?.quiz?.questions || [];
+    if (!checkResponse.ok || existingQuestions.length === 0) {
+      console.log('Step 2: Adding questions...');
+      const questions = Array.isArray(quiz.questions) ? quiz.questions : [];
+      for (let i = 0; i < questions.length; i++) {
+        const question = questions[i];
+        try {
+          const qRes = await fetch(`${API_BASE_URL}/quizzes/standalone/${quizIdForDb}/questions`, {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({
+              type: question.type,
+              question: question.question,
+              options: question.options,
+              correctAnswer: question.correctAnswer,
+              marks: question.marks,
+            }),
+          });
+          if (!qRes.ok) {
+            console.warn(`Failed to add question ${i + 1}/${questions.length}:`, await qRes.text());
+          } else {
+            console.log(`Added question ${i + 1}/${questions.length}`);
+          }
+        } catch (qError) {
+          console.warn(`Error adding question ${i + 1}:`, qError);
+        }
       }
-      console.error('Invite creation failed:', inviteResponse.status, errorData);
-      throw new Error(`Failed to send invites: ${JSON.stringify(errorData)}`);
+    } else {
+      console.log('Quiz already exists, skipping question addition to avoid duplicates.');
     }
 
-    const inviteData = await inviteResponse.json();
+    // Step 3: Invite participants (if any)
+    let inviteData = { tokens: [] };
+    if (participants && participants.length > 0) {
+      console.log('Step 3: Inviting participants...');
+      const inviteResponse = await fetch(`${API_BASE_URL}/quizzes/standalone/${quizIdForDb}/participants`, {
+        method: 'POST',
+        headers: authHeaders,
+        body: JSON.stringify({
+          participants: participants.map((p: { email: string; firstName?: string; lastName?: string }) => ({
+            name: `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email.split('@')[0],
+            email: p.email,
+          })),
+        }),
+      });
+
+      if (!inviteResponse.ok) {
+        let errorData = '';
+        try {
+          errorData = await inviteResponse.json();
+        } catch (e) {
+          errorData = await inviteResponse.text();
+        }
+        console.error('Invite creation failed:', inviteResponse.status, errorData);
+        throw new Error(`Failed to send invites: ${JSON.stringify(errorData)}`);
+      }
+
+      inviteData = await inviteResponse.json();
+    }
 
     console.log('Process completed successfully');
     return NextResponse.json({
@@ -138,7 +153,7 @@ export async function POST(request: NextRequest) {
       invites: inviteData.tokens || [],
       quizId: quizIdForDb,
       inviteLink: `${request.headers.get('origin') || 'http://localhost:3000'}/quiz/take/${quizIdForDb}`,
-      quiz: createdQuiz.quiz || createdQuiz,
+      quiz: finalQuizData?.quiz || finalQuizData,
     });
   } catch (error) {
     console.error('Error in invite route:', error);

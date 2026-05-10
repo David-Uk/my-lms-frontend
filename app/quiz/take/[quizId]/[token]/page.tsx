@@ -36,6 +36,9 @@ interface Participant {
     status: string;
     tabSwitchCount: number;
     terminatedByTabSwitch: boolean;
+    score?: number;
+    percentageScore?: number;
+    passed?: boolean;
 }
 
 type QuizPhase = 'loading' | 'ready' | 'taking' | 'terminated' | 'completed' | 'error';
@@ -100,8 +103,9 @@ export default function TakeQuizPage() {
 
         (async () => {
             try {
+                const fingerprint = encodeURIComponent(typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown');
                 const data = await apiGet<{ quiz: QuizData; questions: QuizQuestion[]; participant: Participant }>(
-                    `/quizzes/take/${quizId}/${token}`,
+                    `/quizzes/take/${quizId}/${token}?deviceFingerprint=${fingerprint}`,
                 );
 
                 const now = new Date();
@@ -125,6 +129,12 @@ export default function TakeQuizPage() {
                 setQuestions(data.questions);
                 setParticipant(data.participant);
                 setTimeLeft(durationMinutes * 60);
+
+                if (!data.questions || data.questions.length === 0) {
+                    setError('This quiz has no questions yet. Please contact the tutor.');
+                    setPhase('error');
+                    return;
+                }
 
                 if (data.participant.status === 'completed') {
                     const res = await apiGet<{ participant: Participant }>(`/quizzes/results/${data.participant.id}`);
@@ -206,9 +216,12 @@ export default function TakeQuizPage() {
         if (!participant) return;
         setIsSubmitting(true);
         try {
+            const fingerprint = typeof window !== 'undefined' ? window.navigator.userAgent : 'unknown';
             const res = await apiPost<{ quiz: QuizData; participant: Participant }>('/quizzes/start', {
                 quizId,
                 token,
+                deviceFingerprint: fingerprint,
+                deviceInfo: fingerprint, // Using same string for basic device info
             });
 
             const durationMinutes = res.quiz.durationMinutes || res.quiz.timeAllocated;
