@@ -11,7 +11,7 @@ async function getAuthToken(request: NextRequest): Promise<string | null> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { quizId, participants, quiz } = body;
+    const { quizId, participants, quiz, sessionId, sessionName } = body;
 
     if (!quizId) {
       return NextResponse.json(
@@ -126,6 +126,8 @@ export async function POST(request: NextRequest) {
         method: 'POST',
         headers: authHeaders,
         body: JSON.stringify({
+          sessionId,
+          sessionName,
           participants: participants.map((p: { email: string; firstName?: string; lastName?: string }) => ({
             name: `${p.firstName || ''} ${p.lastName || ''}`.trim() || p.email.split('@')[0],
             email: p.email,

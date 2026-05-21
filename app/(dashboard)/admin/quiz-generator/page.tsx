@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { api, getToken } from '@/lib/api';
-import { toast } from '@/stores/toast-store';
 import type { QuizQuestion } from '@/types';
 import {
   Sparkles,
@@ -34,22 +33,26 @@ import {
   Shuffle,
   PlusCircle,
   X,
-  ChevronDown,
-  ChevronUp,
   BookOpen,
-  Clock3,
-  MoreHorizontal,
   Pencil,
-  BarChart2,
-  RefreshCw,
 } from 'lucide-react';
-import { QuizPlayer } from '@/components/ai/quiz-player';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface PastQuiz {
   id: string;
@@ -104,74 +107,52 @@ const DIFFICULTY_LEVELS = [
   { id: 'hard', label: 'Hard', description: 'Advanced questions' },
 ];
 
-interface DraggableQuestionProps {
+interface SortableQuestionProps {
   question: QuestionEditor;
   index: number;
   onEdit: () => void;
   onDelete: () => void;
-  draggedIndex: number | null;
-  dragOverIndex: number | null;
-  onDragStart: (e: React.DragEvent, index: number) => void;
-  onDragOver: (e: React.DragEvent, index: number) => void;
-  onDragEnd: () => void;
-  onDrop: (index: number) => void;
 }
 
-function DraggableQuestion({
-  question,
-  index,
-  onEdit,
-  onDelete,
-  draggedIndex,
-  dragOverIndex,
-  onDragStart,
-  onDragOver,
-  onDragEnd,
-  onDrop,
-}: DraggableQuestionProps) {
-  const isCurrentlyDragged = draggedIndex === index;
-  const isDragOver = dragOverIndex === index;
+function SortableQuestion({ question, index, onEdit, onDelete }: SortableQuestionProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: question.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   return (
-    <div
-      draggable
-      onDragStart={(e) => onDragStart(e, index)}
-      onDragOver={(e) => onDragOver(e, index)}
-      onDragEnd={onDragEnd}
-      onDrop={() => onDrop(index)}
-      className={`border-2 transition-all duration-200 rounded-2xl p-5 bg-white shadow-sm hover:shadow-md ${
-        isCurrentlyDragged ? 'opacity-40 scale-[0.98] border-dashed border-purple-300' : 'border-gray-100'
-      } ${isDragOver ? 'border-purple-500 bg-purple-50/30 -translate-y-1' : ''}`}
-    >
-      <div className="flex items-start gap-4">
-        <div className="mt-1 cursor-grab active:cursor-grabbing p-1.5 hover:bg-gray-50 rounded-xl transition-colors">
+    <div ref={setNodeRef} style={style} className="border border-gray-200 rounded-xl p-4 bg-white">
+      <div className="flex items-start gap-3">
+        <button {...attributes} {...listeners} className="mt-1 cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded">
           <GripVertical className="h-5 w-5 text-gray-400" />
-        </div>
-        <div className="flex-shrink-0 bg-purple-100/80 text-purple-700 rounded-2xl w-9 h-9 flex items-center justify-center text-sm font-black shadow-sm">
+        </button>
+        <div className="flex-shrink-0 bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xs font-bold">
           Q{index + 1}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-gray-800 text-base">{question.question || 'Untitled Question'}</p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 mt-2">
-            <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-xl font-bold border border-purple-100/50">
-              {QUESTION_TYPES.find((t) => t.id === question.type)?.label}
-            </span>
-            <span className="bg-gray-50 text-gray-600 px-2.5 py-1 rounded-xl font-bold border border-gray-100">
-              {question.marks} marks
-            </span>
-            {question.options.length > 0 && (
-              <span className="bg-gray-50 text-gray-600 px-2.5 py-1 rounded-xl font-bold border border-gray-100">
-                {question.options.length} options
-              </span>
-            )}
+          <p className="font-semibold text-gray-800 truncate">{question.question || 'Untitled Question'}</p>
+          <div className="flex items-center gap-3 text-xs text-gray-500 mt-1">
+            <span className="bg-gray-100 px-2 py-0.5 rounded">{QUESTION_TYPES.find(t => t.id === question.type)?.label}</span>
+            <span>{question.marks} marks</span>
+            {question.options.length > 0 && <span>{question.options.length} options</span>}
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-purple-50 hover:text-purple-600" onClick={onEdit}>
-            <Edit3 className="h-4.5 w-4.5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg" onClick={onEdit}>
+            <Edit3 className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-red-500 hover:text-red-600 hover:bg-red-50" onClick={onDelete}>
-            <Trash2 className="h-4.5 w-4.5" />
+          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg text-red-500 hover:text-red-600 hover:bg-red-50" onClick={onDelete}>
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -248,7 +229,7 @@ function QuestionEditModal({ question, isOpen, onClose, onSave, totalMarks }: Qu
                 options: e.target.value.includes('single_option') || e.target.value.includes('multiple_option') ? (prev.options.length >= 2 ? prev.options : ['', '', '', '']) : [],
                 correctAnswer: [],
               } : null)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
             >
               {QUESTION_TYPES.map(type => (
                 <option key={type.id} value={type.id}>{type.label}</option>
@@ -262,7 +243,7 @@ function QuestionEditModal({ question, isOpen, onClose, onSave, totalMarks }: Qu
               value={editedQuestion.question}
               onChange={(e) => setEditedQuestion(prev => prev ? { ...prev, question: e.target.value } : null)}
               placeholder="Enter your question..."
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium min-h-[100px] resize-none"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium min-h-[100px] resize-none"
             />
           </div>
 
@@ -299,7 +280,7 @@ function QuestionEditModal({ question, isOpen, onClose, onSave, totalMarks }: Qu
                       value={option}
                       onChange={(e) => updateOption(index, e.target.value)}
                       placeholder={`Option ${index + 1}`}
-                      className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-purple-500 font-medium"
+                      className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 font-medium"
                     />
                     <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-500" onClick={() => removeOption(index)}>
                       <X className="h-4 w-4" />
@@ -342,7 +323,7 @@ function QuestionEditModal({ question, isOpen, onClose, onSave, totalMarks }: Qu
                 value={Array.isArray(editedQuestion.correctAnswer) ? editedQuestion.correctAnswer[0] : editedQuestion.correctAnswer}
                 onChange={(e) => setEditedQuestion(prev => prev ? { ...prev, correctAnswer: [e.target.value] } : null)}
                 placeholder="Enter the correct answer"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
               />
             </div>
           )}
@@ -355,13 +336,13 @@ function QuestionEditModal({ question, isOpen, onClose, onSave, totalMarks }: Qu
               max={totalMarks}
               value={editedQuestion.marks}
               onChange={(e) => setEditedQuestion(prev => prev ? { ...prev, marks: parseInt(e.target.value) || 1 } : null)}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
             />
           </div>
         </div>
         <div className="p-6 border-t border-gray-100 flex gap-4">
           <Button variant="outline" onClick={onClose} className="flex-1 rounded-2xl">Cancel</Button>
-          <Button onClick={handleSave} className="flex-1 rounded-2xl bg-purple-600 hover:bg-purple-700">Save Question</Button>
+          <Button onClick={handleSave} className="flex-1 rounded-2xl bg-blue-600 hover:bg-blue-700">Save Question</Button>
         </div>
       </div>
     </div>
@@ -377,61 +358,198 @@ interface PreviewModalProps {
 }
 
 function PreviewModal({ quiz, questions, isOpen, onClose, randomize }: PreviewModalProps) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string | string[]>>({});
+  const [showResults, setShowResults] = useState(false);
+  const [shuffledQuestions, setShuffledQuestions] = useState<QuestionEditor[]>([]);
+
+  useEffect(() => {
+    if (randomize) {
+      const shuffled = [...questions].sort(() => Math.random() - 0.5);
+      setShuffledQuestions(shuffled);
+    } else {
+      setShuffledQuestions(questions);
+    }
+    setCurrentIndex(0);
+    setSelectedAnswers({});
+    setShowResults(false);
+  }, [questions, randomize]);
+
+  const displayQuestions = shuffledQuestions;
+
   if (!isOpen) return null;
 
-  // Map local QuestionEditor to the shape expected by QuizPlayer
-  const normalizedQuestions = (randomize ? [...questions].sort(() => Math.random() - 0.5) : questions).map(q => ({
-    question: q.question,
-    options: Array.isArray(q.options) ? q.options : [],
-    correctAnswer: Array.isArray(q.correctAnswer) ? q.correctAnswer[0] : String(q.correctAnswer),
-  }));
+  const currentQuestion = displayQuestions[currentIndex];
+  const totalQuestions = displayQuestions.length;
+
+  const calculateScore = () => {
+    let earned = 0;
+    displayQuestions.forEach(q => {
+      const userAnswer = selectedAnswers[q.id];
+      if (q.type === 'single_option' || q.type === 'true_false' || q.type === 'fill_in_the_blank') {
+        const correct = q.correctAnswer;
+        if (userAnswer === correct || (Array.isArray(correct) && correct[0] === userAnswer)) {
+          earned += q.marks;
+        }
+      } else if (q.type === 'multiple_option') {
+        const correct = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer];
+        const user = Array.isArray(userAnswer) ? userAnswer : [];
+        if (JSON.stringify(correct.sort()) === JSON.stringify(user.sort())) {
+          earned += q.marks;
+        }
+      }
+    });
+    return earned;
+  };
+
+  if (showResults) {
+    const score = calculateScore();
+    const percentage = quiz.totalMarks > 0 ? Math.round((score / quiz.totalMarks) * 100) : 0;
+    const passed = percentage >= quiz.passMark;
+
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+          <div className="p-6 border-b border-gray-100">
+            <h3 className="text-2xl font-black text-center">Quiz Results</h3>
+          </div>
+          <div className="p-6 text-center space-y-6">
+            <div className={`text-6xl font-black ${passed ? 'text-green-600' : 'text-red-600'}`}>
+              {percentage}%
+            </div>
+            <p className="text-xl font-bold">{passed ? 'Congratulations! You passed!' : 'Keep trying!'}</p>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-gray-100 rounded-2xl p-4">
+                <p className="text-2xl font-black text-gray-900">{score}</p>
+                <p className="text-sm text-gray-500">Score</p>
+              </div>
+              <div className="bg-gray-100 rounded-2xl p-4">
+                <p className="text-2xl font-black text-gray-900">{quiz.totalMarks}</p>
+                <p className="text-sm text-gray-500">Total Marks</p>
+              </div>
+            </div>
+            <div className="space-y-3 text-left max-h-60 overflow-y-auto">
+              {displayQuestions.map((q, i) => {
+                const userAnswer = selectedAnswers[q.id];
+                let isCorrect = false;
+                if (q.type === 'single_option' || q.type === 'true_false' || q.type === 'fill_in_the_blank') {
+                  isCorrect = userAnswer === q.correctAnswer || (Array.isArray(q.correctAnswer) && q.correctAnswer[0] === userAnswer);
+                } else if (q.type === 'multiple_option') {
+                  const correct = Array.isArray(q.correctAnswer) ? q.correctAnswer : [q.correctAnswer];
+                  const user = Array.isArray(userAnswer) ? userAnswer : [];
+                  isCorrect = JSON.stringify(correct.sort()) === JSON.stringify(user.sort());
+                }
+                return (
+                  <div key={q.id} className={`p-3 rounded-xl ${isCorrect ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <p className="text-sm font-medium">Q{i + 1}: {q.question}</p>
+                    <p className="text-xs mt-1">Your answer: {JSON.stringify(userAnswer)}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className="p-6 border-t border-gray-100">
+            <Button onClick={onClose} className="w-full rounded-2xl bg-blue-600 hover:bg-blue-700">Close Preview</Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const selectAnswer = (answer: string) => {
+    setSelectedAnswers(prev => {
+      const current = Array.isArray(prev[currentQuestion.id]) ? prev[currentQuestion.id] : [];
+      const currentArray = current as string[];
+      if (currentQuestion.type === 'multiple_option') {
+        if (currentArray.includes(answer)) {
+          return { ...prev, [currentQuestion.id]: currentArray.filter(a => a !== answer) };
+        } else {
+          return { ...prev, [currentQuestion.id]: [...currentArray, answer] };
+        }
+      } else {
+        return { ...prev, [currentQuestion.id]: answer };
+      }
+    });
+  };
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-between">
-          <div>
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+        <div className="p-6 border-b border-gray-100">
+          <div className="flex items-center justify-between">
             <h3 className="text-xl font-black text-gray-900">Preview: {quiz.title}</h3>
-            {quiz.description && <p className="text-xs text-gray-500 font-medium mt-0.5">{quiz.description}</p>}
+            <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl">
+              <X className="h-5 w-5" />
+            </Button>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="rounded-xl hover:bg-gray-200/50">
-            <X className="h-5 w-5" />
-          </Button>
+          <p className="text-sm text-gray-500 mt-1">Question {currentIndex + 1} of {totalQuestions}</p>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          <div className="flex items-center gap-4 text-xs font-bold text-gray-500 uppercase tracking-widest bg-gray-50 p-3.5 rounded-2xl border border-gray-100">
-            <span className="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-xl">
-              {normalizedQuestions.length} Questions
-            </span>
-            <span className="bg-pink-100 text-pink-700 px-2.5 py-1 rounded-xl">
-              {quiz.durationMinutes} Minutes
-            </span>
-            <span className="bg-green-100 text-green-700 px-2.5 py-1 rounded-xl">
-              {quiz.passMark}% Pass Mark
-            </span>
+        <div className="p-6 space-y-6">
+          <div className="bg-blue-50 rounded-2xl p-4">
+            <p className="text-lg font-semibold text-gray-900">{currentQuestion.question}</p>
+            {currentQuestion.options.length > 0 && (
+              <div className="space-y-2 mt-4">
+                {currentQuestion.options.map((option, i) => {
+                  const optionLabel = String.fromCharCode(97 + i);
+                  const isSelected = Array.isArray(selectedAnswers[currentQuestion.id])
+                    ? selectedAnswers[currentQuestion.id].includes(option)
+                    : selectedAnswers[currentQuestion.id] === option;
+                  return (
+                    <button
+                      key={i}
+                      onClick={() => selectAnswer(option)}
+                      className={`w-full text-left p-3 rounded-xl border-2 transition-colors ${isSelected ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                    >
+                      <span className="font-bold mr-2">{optionLabel})</span>
+                      {option}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+            {currentQuestion.type === 'true_false' && (
+              <div className="space-y-2 mt-4">
+                {['True', 'False'].map(answer => (
+                  <button
+                    key={answer}
+                    onClick={() => selectAnswer(answer)}
+                    className={`w-full text-left p-3 rounded-xl border-2 transition-colors ${selectedAnswers[currentQuestion.id] === answer ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-blue-300'}`}
+                  >
+                    {answer}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-
-          {normalizedQuestions.length > 0 ? (
-            <QuizPlayer questions={normalizedQuestions} />
+        </div>
+        <div className="p-6 border-t border-gray-100 flex gap-4">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentIndex(prev => Math.max(0, prev - 1))}
+            disabled={currentIndex === 0}
+            className="rounded-2xl"
+          >
+            Previous
+          </Button>
+          {currentIndex === totalQuestions - 1 ? (
+            <Button onClick={() => setShowResults(true)} className="flex-1 rounded-2xl bg-green-600 hover:bg-green-700">
+              See Results
+            </Button>
           ) : (
-            <div className="text-center py-12 text-gray-400">
-              No questions available to preview.
-            </div>
+            <Button
+              onClick={() => setCurrentIndex(prev => Math.min(totalQuestions - 1, prev + 1))}
+              className="flex-1 rounded-2xl"
+            >
+              Next
+            </Button>
           )}
-        </div>
-
-        <div className="p-6 border-t border-gray-100 flex justify-end">
-          <Button onClick={onClose} className="rounded-xl px-6 bg-purple-600 hover:bg-purple-700 font-bold">
-            Close Preview
-          </Button>
         </div>
       </div>
     </div>
   );
 }
 
-export default function GenerateQuizPage() {
+export default function AdminQuizGeneratorPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -449,41 +567,27 @@ export default function GenerateQuizPage() {
 
   const [generatedQuiz, setGeneratedQuiz] = useState<{
     quiz: { id: string; title?: string; description?: string; timeAllocated?: number; totalMarks?: number; passMark?: number; startDateTime?: string; endDateTime?: string; durationMinutes?: number };
-    questions: any[];
+    questions: QuestionEditor[];
   } | null>(null);
 
   const [questions, setQuestions] = useState<QuestionEditor[]>([]);
   const [editingQuestion, setEditingQuestion] = useState<QuestionEditor | null>(null);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [showEditQuizModal, setShowEditQuizModal] = useState(false);
 
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [newEmail, setNewEmail] = useState('');
 
-  // Native HTML5 Drag-and-Drop states
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
-
-  // Session creation states
-  const [selectedQuizForSession, setSelectedQuizForSession] = useState<PastQuiz | null>(null);
-  const [showStartSessionModal, setShowStartSessionModal] = useState(false);
-  const [sessionNameInput, setSessionNameInput] = useState('');
-  const [sessionParticipants, setSessionParticipants] = useState<Participant[]>([]);
-  const [sessionNewEmail, setSessionNewEmail] = useState('');
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [sessionCreatedData, setSessionCreatedData] = useState<{ sessionId: string; sessionName: string; inviteLink: string; invites: any[] } | null>(null);
-
-  // Session reports states
-  const [activeReportsQuiz, setActiveReportsQuiz] = useState<PastQuiz | null>(null);
-  const [quizSessions, setQuizSessions] = useState<any[]>([]);
-  const [loadingSessions, setLoadingSessions] = useState(false);
-  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const fetchPastQuizzes = useCallback(async () => {
     try {
       setLoadingQuizzes(true);
-      // Fetch directly from the NestJS standalone quiz controller endpoint
-      const response = await api.get<PastQuiz[]>('/quizzes/standalone');
+      const response = await api.get<PastQuiz[]>('/quiz/list');
       setPastQuizzes(response);
     } catch (err) {
       console.error('Failed to fetch past quizzes:', err);
@@ -514,8 +618,6 @@ export default function GenerateQuizPage() {
     endDate: getDefaultEndDate(),
     endTime: '17:00',
     durationMinutes: 60,
-    title: '',
-    description: '',
   });
 
   const [manualQuizSettings, setManualQuizSettings] = useState({
@@ -660,7 +762,7 @@ export default function GenerateQuizPage() {
             durationMinutes: manualQuizSettings.durationMinutes,
             startDateTime: `${manualQuizSettings.startDate}T${manualQuizSettings.startTime}`,
             endDateTime: `${manualQuizSettings.endDate}T${manualQuizSettings.endTime}`,
-            questions: questions.map((q, i) => ({
+            questions: questions.map((q) => ({
               id: q.id,
               type: q.type,
               question: q.question,
@@ -701,42 +803,14 @@ export default function GenerateQuizPage() {
     }
   };
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e: React.DragEvent, index: number) => {
-    e.preventDefault();
-    if (draggedIndex !== index) {
-      setDragOverIndex(index);
-    }
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = async (index: number) => {
-    if (draggedIndex === null || draggedIndex === index) return;
-    const updated = [...questions];
-    const [removed] = updated.splice(draggedIndex, 1);
-    updated.splice(index, 0, removed);
-    setQuestions(updated);
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-
-    // If we've already saved the quiz, sync the new question order to the database
-    if (generatedQuiz?.quiz?.id) {
-      try {
-        await api.put('/api/quiz/reorder', {
-          quizId: generatedQuiz.quiz.id,
-          questionIds: updated.map(q => q.id),
-        });
-      } catch (err) {
-        console.error('Failed to sync question order:', err);
-      }
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (over && active.id !== over.id) {
+      setQuestions(prev => {
+        const oldIndex = prev.findIndex(q => q.id === active.id);
+        const newIndex = prev.findIndex(q => q.id === over.id);
+        return arrayMove(prev, oldIndex, newIndex);
+      });
     }
   };
 
@@ -957,95 +1031,35 @@ export default function GenerateQuizPage() {
       endDate: getDefaultEndDate(),
       endTime: '17:00',
       durationMinutes: 60,
-      title: '',
-      description: '',
     });
   };
 
-  const openStartSessionModal = (quiz: PastQuiz) => {
-    setSelectedQuizForSession(quiz);
-    const dateStr = new Date().toLocaleString();
-    setSessionNameInput(`Session - ${dateStr}`);
-    setSessionParticipants([]);
-    setSessionNewEmail('');
-    setSessionCreatedData(null);
-    setShowStartSessionModal(true);
-  };
-
-  const handleCreateSessionSubmit = async () => {
-    if (!selectedQuizForSession) return;
-    if (!sessionNameInput.trim()) {
-      toast.error('Session Name is required');
-      return;
-    }
-
-    try {
-      setIsCreatingSession(true);
-      const token = await getToken();
-      const response = await fetch(`/api/quiz/session/${selectedQuizForSession.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          sessionName: sessionNameInput,
-          participants: sessionParticipants.map(p => ({
-            email: p.email,
-            firstName: p.firstName,
-            lastName: p.lastName,
-          })),
-        }),
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.message || 'Failed to create session');
-      }
-
-      const resData = await response.json();
-      setSessionCreatedData(resData);
-      toast.success('Session created successfully!');
-      fetchPastQuizzes();
-    } catch (error: any) {
-      console.error(error);
-      toast.error(error.message || 'Failed to create session');
-    } finally {
-      setIsCreatingSession(false);
-    }
-  };
-
-  const handleViewSessions = async (quiz: PastQuiz) => {
-    setActiveReportsQuiz(quiz);
-    setLoadingSessions(true);
-    setExpandedSessionId(null);
-    try {
-      const response = await api.get<any[]>(`/api/quiz/session/${quiz.id}`);
-      setQuizSessions(response);
-    } catch (err) {
-      console.error('Failed to fetch sessions:', err);
-      toast.error('Failed to load sessions');
-    } finally {
-      setLoadingSessions(false);
-    }
-  };
-
-  const handleResetParticipant = async (participantId: string) => {
-    if (!activeReportsQuiz) return;
-    try {
-      await api.post(`/quizzes/standalone/${activeReportsQuiz.id}/participants/${participantId}/reset`, {});
-      toast.success('Participant session reset successfully!');
-      // Refresh session reports
-      const response = await api.get<any[]>(`/api/quiz/session/${activeReportsQuiz.id}`);
-      setQuizSessions(response);
-    } catch (err) {
-      console.error('Failed to reset participant:', err);
-      toast.error('Failed to reset participant session');
-    }
-  };
-
   const handleStartSession = async (quiz: PastQuiz) => {
-    openStartSessionModal(quiz);
+    setTab('new');
+    setCreateMode('manual');
+    setStep('invite');
+    const questionsList: QuestionEditor[] = (quiz.questions || []).map((q: any) => ({
+      id: q.id,
+      type: q.type as QuestionEditor['type'],
+      question: q.question,
+      options: Array.isArray(q.options) ? q.options : [],
+      correctAnswer: q.correctAnswer,
+      marks: q.marks,
+    }));
+    setGeneratedQuiz({
+      quiz: {
+        id: quiz.id,
+        title: quiz.title,
+        description: quiz.description || '',
+        timeAllocated: quiz.durationMinutes || quiz.timeAllocated,
+        totalMarks: quiz.totalMarks || 100,
+        passMark: quiz.passMark,
+        startDateTime: quiz.startDateTime || '',
+        endDateTime: quiz.endDateTime || '',
+        durationMinutes: quiz.durationMinutes || quiz.timeAllocated,
+      },
+      questions: questionsList,
+    });
   };
 
   const handlePreviewQuiz = (quiz: PastQuiz) => {
@@ -1096,19 +1110,19 @@ export default function GenerateQuizPage() {
     <>
       <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000 max-w-7xl mx-auto">
         <div className="flex items-center gap-4">
-          <Link href="/tutor/sessions">
+          <Link href="/admin/dashboard">
             <Button variant="ghost" size="icon" className="rounded-xl">
               <ArrowLeft className="h-5 w-5" />
             </Button>
           </Link>
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded-3xl shadow-lg">
+            <div className="p-4 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl shadow-lg">
               <Sparkles className="h-8 w-8 text-white" />
             </div>
             <div>
               <h1 className="text-4xl font-black text-gray-900 tracking-tight">AI Quiz Generator</h1>
               <p className="text-gray-500 font-medium mt-1">
-                {tab === 'list' && 'View and manage your quizzes'}
+                {tab === 'list' && 'View and manage quizzes'}
                 {tab === 'new' && step === 'configure' && 'Configure your quiz settings'}
                 {tab === 'new' && step === 'preview' && 'Review and edit quiz'}
                 {tab === 'new' && step === 'invite' && 'Add participants to invite'}
@@ -1118,132 +1132,95 @@ export default function GenerateQuizPage() {
           </div>
         </div>
 
-        <div className="relative bg-white p-1.5 rounded-2xl border border-purple-100 flex max-w-sm shadow-sm">
+        <div className="flex gap-3 mb-6">
           <button
             onClick={() => setTab('list')}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
-              tab === 'list'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-100'
-                : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50/50'
-            }`}
+            className={`px-4 py-2 rounded-xl font-bold transition-colors ${tab === 'list' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
           >
-            <BookOpen className="h-4 w-4" />
+            <BookOpen className="h-4 w-4 inline mr-2" />
             Past Quizzes
           </button>
           <button
             onClick={() => { setTab('new'); resetForm(); }}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl font-bold text-sm transition-all duration-300 ${
-              tab === 'new'
-                ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-md shadow-purple-100'
-                : 'text-gray-600 hover:text-purple-600 hover:bg-purple-50/50'
-            }`}
+            className={`px-4 py-2 rounded-xl font-bold transition-colors ${tab === 'new' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
           >
-            <PlusCircle className="h-4 w-4" />
-            Create Quiz
+            <PlusCircle className="h-4 w-4 inline mr-2" />
+            Create New Quiz
           </button>
         </div>
 
         {tab === 'list' && (
-          <Card className="border-none shadow-2xl shadow-gray-150/40 rounded-[2.5rem] overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-purple-50/70 to-pink-50/70 border-b border-purple-100/50 p-8">
+          <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-8">
               <div className="flex items-center gap-3">
-                <Brain className="h-6 w-6 text-purple-600 animate-pulse" />
+                <Brain className="h-6 w-6 text-blue-600" />
                 <CardTitle className="text-2xl font-black">Your Past Quizzes</CardTitle>
               </div>
-              <p className="text-gray-500 font-semibold mt-2">Manage quizzes, spin up parallel participant sessions, or review detailed performance reports.</p>
+              <p className="text-gray-500 font-medium mt-2">View, edit, preview, and start sessions with your quizzes</p>
             </CardHeader>
             <CardContent className="p-8">
               {loadingQuizzes ? (
-                <div className="flex flex-col items-center justify-center py-16 gap-3">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-t-2 border-purple-600" />
-                  <p className="text-xs font-bold text-purple-600 uppercase tracking-widest">Loading quizzes...</p>
+                <div className="flex justify-center py-12">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
                 </div>
               ) : pastQuizzes.length === 0 ? (
-                <div className="text-center py-16 max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-purple-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-purple-100">
-                    <BookOpen className="h-8 w-8 text-purple-600" />
-                  </div>
-                  <h3 className="text-xl font-black text-gray-900">No quizzes generated yet</h3>
-                  <p className="mt-2 text-gray-500 font-medium">Generate a new quiz instantly using AI, or create one manually with custom questions.</p>
-                  <Button onClick={() => setTab('new')} className="mt-6 rounded-2xl bg-purple-600 hover:bg-purple-700 font-bold px-6 py-5 shadow-lg shadow-purple-100">
-                    Create a Quiz
+                <div className="text-center py-12">
+                  <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
+                  <h3 className="mt-4 text-lg font-bold text-gray-900">No quizzes yet</h3>
+                  <p className="mt-1 text-gray-500">Create your first quiz to get started.</p>
+                  <Button onClick={() => setTab('new')} className="mt-4 rounded-2xl bg-blue-600">
+                    Create Quiz
                   </Button>
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-gray-100">
-                  <table className="w-full border-collapse">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-100 bg-gray-50/50">
-                        <th className="py-5 px-6 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Quiz Details</th>
-                        <th className="py-5 px-6 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Questions</th>
-                        <th className="py-5 px-6 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Duration</th>
-                        <th className="py-5 px-6 text-center text-xs font-black text-gray-400 uppercase tracking-widest">Created</th>
-                        <th className="py-5 px-6 text-right text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
+                      <tr className="border-b border-gray-100">
+                        <th className="py-4 px-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Quiz</th>
+                        <th className="py-4 px-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Questions</th>
+                        <th className="py-4 px-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Duration</th>
+                        <th className="py-4 px-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Created</th>
+                        <th className="py-4 px-4 text-left text-xs font-black text-gray-400 uppercase tracking-widest">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-gray-50">
                       {pastQuizzes.map((quiz) => (
-                        <tr key={quiz.id} className="hover:bg-purple-50/20 transition-all duration-200">
-                          <td className="py-5 px-6">
+                        <tr key={quiz.id} className="hover:bg-gray-50/50 transition-colors">
+                          <td className="py-4 px-4">
                             <div>
-                              <p className="font-extrabold text-gray-900 text-base">{quiz.title}</p>
-                              <p className="text-xs text-gray-500 font-medium mt-0.5 line-clamp-1">{quiz.description || 'No description'}</p>
+                              <p className="font-bold text-gray-900">{quiz.title}</p>
+                              <p className="text-xs text-gray-500">{quiz.description || 'No description'}</p>
                             </div>
                           </td>
-                          <td className="py-5 px-6 text-center">
-                            <span className="inline-flex items-center justify-center px-3 py-1 rounded-xl text-xs font-black bg-purple-50 text-purple-700 border border-purple-100/50">
-                              {quiz.questions?.length || 0} Questions
-                            </span>
+                          <td className="py-4 px-4">
+                            <span className="font-medium text-gray-700">{quiz.questions?.length || 0}</span>
                           </td>
-                          <td className="py-5 px-6 text-center">
-                            <span className="inline-flex items-center gap-1.5 text-sm text-gray-600 font-bold justify-center">
-                              <Clock className="h-4 w-4 text-pink-500" />
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
+                              <Clock className="h-4 w-4 text-blue-600" />
                               {quiz.durationMinutes || quiz.timeAllocated} min
-                            </span>
+                            </div>
                           </td>
-                          <td className="py-5 px-6 text-center">
-                            <span className="inline-flex items-center gap-1.5 text-sm text-gray-500 font-bold justify-center">
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-1 text-sm text-gray-600">
                               <Calendar className="h-4 w-4 text-gray-400" />
                               {new Date(quiz.createdAt).toLocaleDateString()}
-                            </span>
+                            </div>
                           </td>
-                          <td className="py-5 px-6">
-                            <div className="flex items-center justify-end gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 gap-1.5 rounded-xl border-gray-200 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600 font-bold text-xs"
-                                onClick={() => handlePreviewQuiz(quiz)}
-                              >
-                                <Eye className="h-3.5 w-3.5" />
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-2">
+                              <Button variant="outline" size="sm" className="gap-1 rounded-xl" onClick={() => handlePreviewQuiz(quiz)}>
+                                <Eye className="h-3 w-3" />
                                 Preview
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 gap-1.5 rounded-xl border-gray-200 hover:border-purple-200 hover:bg-purple-50 hover:text-purple-600 font-bold text-xs"
-                                onClick={() => handleEditQuiz(quiz)}
-                              >
-                                <Edit3 className="h-3.5 w-3.5" />
+                              <Button variant="outline" size="sm" className="gap-1 rounded-xl" onClick={() => handleEditQuiz(quiz)}>
+                                <Edit3 className="h-3 w-3" />
                                 Edit
                               </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 gap-1.5 rounded-xl bg-purple-50 border-purple-100 text-purple-700 hover:bg-purple-100 hover:text-purple-800 font-bold text-xs shadow-sm"
-                                onClick={() => openStartSessionModal(quiz)}
-                              >
-                                <Play className="h-3.5 w-3.5 fill-current" />
+                              <Button variant="outline" size="sm" className="gap-1 rounded-xl" onClick={() => handleStartSession(quiz)}>
+                                <Play className="h-3 w-3" />
                                 Start Session
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="h-9 gap-1.5 rounded-xl bg-pink-50 border-pink-100 text-pink-700 hover:bg-pink-100 hover:text-pink-800 font-bold text-xs shadow-sm"
-                                onClick={() => handleViewSessions(quiz)}
-                              >
-                                <BarChart2 className="h-3.5 w-3.5" />
-                                Reports
                               </Button>
                             </div>
                           </td>
@@ -1262,14 +1239,14 @@ export default function GenerateQuizPage() {
             <div className="flex gap-3 mb-6">
               <button
                 onClick={() => setCreateMode('ai')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-colors ${createMode === 'ai' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-colors ${createMode === 'ai' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               >
                 <Sparkles className="h-4 w-4" />
                 AI Generate
               </button>
               <button
                 onClick={() => setCreateMode('manual')}
-                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-colors ${createMode === 'manual' ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold transition-colors ${createMode === 'manual' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
               >
                 <Pencil className="h-4 w-4" />
                 Manual Create
@@ -1303,9 +1280,9 @@ export default function GenerateQuizPage() {
 
             {step === 'configure' && createMode === 'ai' && (
               <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-8">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-8">
                   <div className="flex items-center gap-3">
-                    <Brain className="h-6 w-6 text-purple-600" />
+                    <Brain className="h-6 w-6 text-blue-600" />
                     <CardTitle className="text-2xl font-black">Quiz Configuration</CardTitle>
                   </div>
                   <p className="text-gray-500 font-medium mt-2">Configure your quiz settings and let AI generate questions</p>
@@ -1314,14 +1291,14 @@ export default function GenerateQuizPage() {
                   <form onSubmit={handleGenerateQuiz} className="space-y-8">
                     <div className="space-y-3">
                       <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        <Layers className="h-4 w-4 text-purple-600" />
+                        <Layers className="h-4 w-4 text-blue-600" />
                         Topics
                       </label>
                       <textarea
                         value={formData.topics}
                         onChange={(e) => setFormData(prev => ({ ...prev, topics: e.target.value }))}
                         placeholder="Enter topics separated by commas (e.g., JavaScript fundamentals, React hooks, Node.js basics)"
-                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium min-h-[120px] resize-none"
+                        className="w-full px-4 py-4 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium min-h-[120px] resize-none"
                       />
                       <p className="text-xs text-gray-500">Separate multiple topics with commas</p>
                     </div>
@@ -1329,7 +1306,7 @@ export default function GenerateQuizPage() {
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <ListChecks className="h-4 w-4 text-purple-600" />
+                          <ListChecks className="h-4 w-4 text-blue-600" />
                           Number of Questions
                         </label>
                         <input
@@ -1338,19 +1315,19 @@ export default function GenerateQuizPage() {
                           max="50"
                           value={formData.numberOfQuestions}
                           onChange={(e) => setFormData(prev => ({ ...prev, numberOfQuestions: parseInt(e.target.value) || 10 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                       </div>
 
                       <div className="space-y-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <Target className="h-4 w-4 text-purple-600" />
+                          <Target className="h-4 w-4 text-blue-600" />
                           Difficulty Level
                         </label>
                         <select
                           value={formData.difficultyLevel}
                           onChange={(e) => setFormData(prev => ({ ...prev, difficultyLevel: e.target.value }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                         >
                           {DIFFICULTY_LEVELS.map(level => (
                             <option key={level.id} value={level.id}>{level.label}</option>
@@ -1360,7 +1337,7 @@ export default function GenerateQuizPage() {
 
                       <div className="space-y-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <Target className="h-4 w-4 text-purple-600" />
+                          <Target className="h-4 w-4 text-blue-600" />
                           Total Marks
                         </label>
                         <input
@@ -1369,13 +1346,13 @@ export default function GenerateQuizPage() {
                           max="1000"
                           value={formData.totalMarks}
                           onChange={(e) => setFormData(prev => ({ ...prev, totalMarks: parseInt(e.target.value) || 100 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                       </div>
 
                       <div className="space-y-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                          <CheckCircle2 className="h-4 w-4 text-blue-600" />
                           Pass Mark
                         </label>
                         <input
@@ -1384,14 +1361,14 @@ export default function GenerateQuizPage() {
                           max={formData.totalMarks}
                           value={formData.passMark}
                           onChange={(e) => setFormData(prev => ({ ...prev, passMark: parseInt(e.target.value) || 50 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-3xl border-2 border-purple-100 space-y-5">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-3xl border-2 border-blue-100 space-y-5">
                       <div className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        <Calendar className="h-4 w-4 text-purple-600" />
+                        <Calendar className="h-4 w-4 text-blue-600" />
                         Quiz Time Settings
                       </div>
 
@@ -1402,7 +1379,7 @@ export default function GenerateQuizPage() {
                             type="date"
                             value={formData.startDate}
                             onChange={(e) => setFormData(prev => ({ ...prev, startDate: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1411,7 +1388,7 @@ export default function GenerateQuizPage() {
                             type="time"
                             value={formData.startTime}
                             onChange={(e) => setFormData(prev => ({ ...prev, startTime: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1420,7 +1397,7 @@ export default function GenerateQuizPage() {
                             type="date"
                             value={formData.endDate}
                             onChange={(e) => setFormData(prev => ({ ...prev, endDate: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1429,14 +1406,14 @@ export default function GenerateQuizPage() {
                             type="time"
                             value={formData.endTime}
                             onChange={(e) => setFormData(prev => ({ ...prev, endTime: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <label className="flex items-center gap-2 text-xs font-bold text-gray-600 uppercase tracking-wide">
-                          <Clock className="h-4 w-4 text-purple-600" />
+                          <Clock className="h-4 w-4 text-blue-600" />
                           Duration (minutes)
                         </label>
                         <input
@@ -1445,7 +1422,7 @@ export default function GenerateQuizPage() {
                           max="480"
                           value={formData.durationMinutes}
                           onChange={(e) => setFormData(prev => ({ ...prev, durationMinutes: parseInt(e.target.value) || 60 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                         <p className="text-xs text-gray-500">Time allowed to complete the quiz once started</p>
                       </div>
@@ -1453,7 +1430,7 @@ export default function GenerateQuizPage() {
 
                     <div className="space-y-4">
                       <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        <ListChecks className="h-4 w-4 text-purple-600" />
+                        <ListChecks className="h-4 w-4 text-blue-600" />
                         Question Types
                       </label>
                       <div className="grid sm:grid-cols-2 gap-3">
@@ -1464,14 +1441,14 @@ export default function GenerateQuizPage() {
                             onClick={() => toggleQuestionType(type.id)}
                             className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200 ${
                               formData.questionTypes.includes(type.id)
-                                ? 'border-purple-500 bg-purple-50 text-purple-700'
-                                : 'border-gray-200 hover:border-purple-300 hover:bg-purple-50/50'
+                                ? 'border-blue-500 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
                             }`}
                           >
                             <span className="text-2xl">{type.icon}</span>
                             <span className="font-bold text-sm">{type.label}</span>
                             {formData.questionTypes.includes(type.id) && (
-                              <CheckCircle2 className="h-5 w-5 ml-auto text-purple-600" />
+                              <CheckCircle2 className="h-5 w-5 ml-auto text-blue-600" />
                             )}
                           </button>
                         ))}
@@ -1481,7 +1458,7 @@ export default function GenerateQuizPage() {
                     <Button
                       type="submit"
                       disabled={isGenerating}
-                      className="w-full h-14 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg gap-3 shadow-lg shadow-purple-200"
+                      className="w-full h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg gap-3 shadow-lg shadow-blue-200"
                     >
                       {isGenerating ? (
                         <>
@@ -1502,9 +1479,9 @@ export default function GenerateQuizPage() {
 
             {step === 'configure' && createMode === 'manual' && (
               <Card className="border-none shadow-xl rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-8">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-8">
                   <div className="flex items-center gap-3">
-                    <Pencil className="h-6 w-6 text-purple-600" />
+                    <Pencil className="h-6 w-6 text-blue-600" />
                     <CardTitle className="text-2xl font-black">Manual Quiz Creation</CardTitle>
                   </div>
                   <p className="text-gray-500 font-medium mt-2">Create your quiz manually and add questions one by one</p>
@@ -1513,7 +1490,7 @@ export default function GenerateQuizPage() {
                   <div className="space-y-8">
                     <div className="space-y-3">
                       <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        <Layers className="h-4 w-4 text-purple-600" />
+                        <Layers className="h-4 w-4 text-blue-600" />
                         Quiz Title
                       </label>
                       <input
@@ -1521,27 +1498,27 @@ export default function GenerateQuizPage() {
                         value={manualQuizSettings.title}
                         onChange={(e) => setManualQuizSettings(prev => ({ ...prev, title: e.target.value }))}
                         placeholder="Enter quiz title..."
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                       />
                     </div>
 
                     <div className="space-y-3">
                       <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        <Layers className="h-4 w-4 text-purple-600" />
+                        <Layers className="h-4 w-4 text-blue-600" />
                         Description
                       </label>
                       <textarea
                         value={manualQuizSettings.description}
                         onChange={(e) => setManualQuizSettings(prev => ({ ...prev, description: e.target.value }))}
                         placeholder="Enter quiz description (optional)..."
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium min-h-[100px] resize-none"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium min-h-[100px] resize-none"
                       />
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <Target className="h-4 w-4 text-purple-600" />
+                          <Target className="h-4 w-4 text-blue-600" />
                           Total Marks
                         </label>
                         <input
@@ -1550,13 +1527,13 @@ export default function GenerateQuizPage() {
                           max="1000"
                           value={manualQuizSettings.totalMarks}
                           onChange={(e) => setManualQuizSettings(prev => ({ ...prev, totalMarks: parseInt(e.target.value) || 100 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                       </div>
 
                       <div className="space-y-3">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                          <CheckCircle2 className="h-4 w-4 text-blue-600" />
                           Pass Mark
                         </label>
                         <input
@@ -1565,14 +1542,14 @@ export default function GenerateQuizPage() {
                           max={manualQuizSettings.totalMarks}
                           value={manualQuizSettings.passMark}
                           onChange={(e) => setManualQuizSettings(prev => ({ ...prev, passMark: parseInt(e.target.value) || 50 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                       </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-purple-50 to-pink-50 p-6 rounded-3xl border-2 border-purple-100 space-y-5">
+                    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-3xl border-2 border-blue-100 space-y-5">
                       <div className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                        <Calendar className="h-4 w-4 text-purple-600" />
+                        <Calendar className="h-4 w-4 text-blue-600" />
                         Quiz Time Settings
                       </div>
 
@@ -1583,7 +1560,7 @@ export default function GenerateQuizPage() {
                             type="date"
                             value={manualQuizSettings.startDate}
                             onChange={(e) => setManualQuizSettings(prev => ({ ...prev, startDate: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1592,7 +1569,7 @@ export default function GenerateQuizPage() {
                             type="time"
                             value={manualQuizSettings.startTime}
                             onChange={(e) => setManualQuizSettings(prev => ({ ...prev, startTime: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1601,7 +1578,7 @@ export default function GenerateQuizPage() {
                             type="date"
                             value={manualQuizSettings.endDate}
                             onChange={(e) => setManualQuizSettings(prev => ({ ...prev, endDate: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                         <div className="space-y-2">
@@ -1610,14 +1587,14 @@ export default function GenerateQuizPage() {
                             type="time"
                             value={manualQuizSettings.endTime}
                             onChange={(e) => setManualQuizSettings(prev => ({ ...prev, endTime: e.target.value }))}
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium bg-white"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium bg-white"
                           />
                         </div>
                       </div>
 
                       <div className="space-y-2">
                         <label className="flex items-center gap-2 text-xs font-bold text-gray-600 uppercase tracking-wide">
-                          <Clock className="h-4 w-4 text-purple-600" />
+                          <Clock className="h-4 w-4 text-blue-600" />
                           Duration (minutes)
                         </label>
                         <input
@@ -1626,7 +1603,7 @@ export default function GenerateQuizPage() {
                           max="480"
                           value={manualQuizSettings.durationMinutes}
                           onChange={(e) => setManualQuizSettings(prev => ({ ...prev, durationMinutes: parseInt(e.target.value) || 60 }))}
-                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                          className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                         />
                       </div>
                     </div>
@@ -1634,7 +1611,7 @@ export default function GenerateQuizPage() {
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <label className="flex items-center gap-2 text-sm font-bold text-gray-900 uppercase tracking-widest">
-                          <ListChecks className="h-4 w-4 text-purple-600" />
+                          <ListChecks className="h-4 w-4 text-blue-600" />
                           Questions ({questions.length})
                         </label>
                         <div className="flex gap-2">
@@ -1650,26 +1627,28 @@ export default function GenerateQuizPage() {
                       </div>
 
                       {questions.length > 0 ? (
-                        <div className="space-y-3">
-                          {questions.map((question, index) => (
-                            <DraggableQuestion
-                              key={question.id}
-                              question={question}
-                              index={index}
-                              draggedIndex={draggedIndex}
-                              dragOverIndex={dragOverIndex}
-                              onDragStart={handleDragStart}
-                              onDragOver={handleDragOver}
-                              onDragEnd={handleDragEnd}
-                              onDrop={handleDrop}
-                              onEdit={() => {
-                                setEditingQuestion(question);
-                                setShowQuestionModal(true);
-                              }}
-                              onDelete={() => deleteQuestion(question.id)}
-                            />
-                          ))}
-                        </div>
+                        <DndContext
+                          sensors={sensors}
+                          collisionDetection={closestCenter}
+                          onDragEnd={handleDragEnd}
+                        >
+                          <SortableContext items={questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                            <div className="space-y-3">
+                              {questions.map((question, index) => (
+                                <SortableQuestion
+                                  key={question.id}
+                                  question={question}
+                                  index={index}
+                                  onEdit={() => {
+                                    setEditingQuestion(question);
+                                    setShowQuestionModal(true);
+                                  }}
+                                  onDelete={() => deleteQuestion(question.id)}
+                                />
+                              ))}
+                            </div>
+                          </SortableContext>
+                        </DndContext>
                       ) : (
                         <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-2xl">
                           <p className="text-gray-500">No questions added yet. Click below to add your first question.</p>
@@ -1685,7 +1664,7 @@ export default function GenerateQuizPage() {
                     <Button
                       onClick={handleCreateManualQuiz}
                       disabled={isGenerating || questions.length === 0 || !manualQuizSettings.title.trim()}
-                      className="w-full h-14 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg gap-3 shadow-lg shadow-purple-200"
+                      className="w-full h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg gap-3 shadow-lg shadow-blue-200"
                     >
                       {isGenerating ? (
                         <>
@@ -1706,7 +1685,7 @@ export default function GenerateQuizPage() {
 
             {step === 'preview' && generatedQuiz && (
               <Card className="border-none shadow-2xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden">
-                <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-8">
+                <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-8">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="p-3 bg-green-100 rounded-xl">
@@ -1718,11 +1697,11 @@ export default function GenerateQuizPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => { setShowPreview(true); setPreviewRandomize(false); }} className="gap-2 rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50">
+                      <Button variant="outline" size="sm" onClick={() => { setShowPreview(true); setPreviewRandomize(false); }} className="gap-2 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50">
                         <Eye className="h-4 w-4" />
                         Preview Quiz
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => { setShowPreview(true); setPreviewRandomize(true); }} className="gap-2 rounded-xl border-purple-200 text-purple-600 hover:bg-purple-50">
+                      <Button variant="outline" size="sm" onClick={() => { setShowPreview(true); setPreviewRandomize(true); }} className="gap-2 rounded-xl border-blue-200 text-blue-600 hover:bg-blue-50">
                         <Shuffle className="h-4 w-4" />
                         Random Preview
                       </Button>
@@ -1750,58 +1729,60 @@ export default function GenerateQuizPage() {
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        {questions.map((question, index) => (
-                          <DraggableQuestion
-                            key={question.id}
-                            question={question}
-                            index={index}
-                            draggedIndex={draggedIndex}
-                            dragOverIndex={dragOverIndex}
-                            onDragStart={handleDragStart}
-                            onDragOver={handleDragOver}
-                            onDragEnd={handleDragEnd}
-                            onDrop={handleDrop}
-                            onEdit={() => {
-                              setEditingQuestion(question);
-                              setShowQuestionModal(true);
-                            }}
-                            onDelete={() => deleteQuestion(question.id)}
-                          />
-                        ))}
-                      </div>
+                      <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragEnd={handleDragEnd}
+                      >
+                        <SortableContext items={questions.map(q => q.id)} strategy={verticalListSortingStrategy}>
+                          <div className="space-y-3">
+                            {questions.map((question, index) => (
+                              <SortableQuestion
+                                key={question.id}
+                                question={question}
+                                index={index}
+                                onEdit={() => {
+                                  setEditingQuestion(question);
+                                  setShowQuestionModal(true);
+                                }}
+                                onDelete={() => deleteQuestion(question.id)}
+                              />
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
                     </div>
                   )}
 
-                  <div className="mb-8 p-6 bg-purple-50 rounded-3xl border-2 border-purple-100 space-y-4">
+                  <div className="mb-8 p-6 bg-blue-50 rounded-3xl border-2 border-blue-100 space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-black text-purple-900 uppercase tracking-widest">Learner Access Link</h3>
-                      <span className="text-[10px] bg-purple-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Live Link</span>
+                      <h3 className="text-sm font-black text-blue-900 uppercase tracking-widest">Learner Access Link</h3>
+                      <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded-full font-bold uppercase tracking-widest">Live Link</span>
                     </div>
-                    <code className="text-xs bg-white px-4 py-3 rounded-xl border border-purple-200 font-mono block break-all text-purple-700">
+                    <code className="text-xs bg-white px-4 py-3 rounded-xl border border-blue-200 font-mono block break-all text-blue-700">
                       {typeof window !== 'undefined' ? `${window.location.origin}/quiz/take/${generatedQuiz.quiz.id}` : ''}
                     </code>
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-24 h-24 rounded-full flex items-center justify-center bg-purple-100">
-                        <Brain className="h-12 w-12 text-purple-600" />
+                      <div className="w-24 h-24 rounded-full flex items-center justify-center bg-blue-100">
+                        <Brain className="h-12 w-12 text-blue-600" />
                       </div>
                       <div className="flex-1">
                         <h2 className="text-2xl font-black text-gray-900 mb-2">{generatedQuiz.quiz.title || 'Untitled Quiz'}</h2>
                         <p className="text-gray-600">{generatedQuiz.quiz.description || 'No description provided'}</p>
                         <div className="flex items-center gap-4 text-sm text-gray-500 mt-2">
                           <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4 text-purple-600" />
+                            <Clock className="h-4 w-4 text-blue-600" />
                             <span>{generatedQuiz.quiz.durationMinutes || generatedQuiz.quiz.timeAllocated} minutes</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Target className="h-4 w-4 text-purple-600" />
+                            <Target className="h-4 w-4 text-blue-600" />
                             <span>{generatedQuiz.quiz.totalMarks} total marks</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <CheckCircle2 className="h-4 w-4 text-purple-600" />
+                            <CheckCircle2 className="h-4 w-4 text-blue-600" />
                             <span>{generatedQuiz.quiz.passMark}% pass mark</span>
                           </div>
                         </div>
@@ -1861,7 +1842,7 @@ export default function GenerateQuizPage() {
                 <CardFooter className="px-6 py-4 border-t border-gray-100 flex justify-end gap-4">
                   <Button
                     variant="outline"
-                    onClick={() => setStep(createMode === 'ai' ? 'configure' : 'configure')}
+                    onClick={() => setStep('configure')}
                     className="gap-2 rounded-xl"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -1869,7 +1850,7 @@ export default function GenerateQuizPage() {
                   </Button>
                   <Button
                     onClick={() => setStep('invite')}
-                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg gap-3 shadow-lg shadow-purple-200"
+                    className="w-full h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg gap-3 shadow-lg shadow-blue-200"
                   >
                     <ArrowRight className="h-4 w-4" />
                     Continue to Invite Participants
@@ -1917,9 +1898,9 @@ export default function GenerateQuizPage() {
                 </Card>
 
                 <Card className="border-none shadow-2xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b border-purple-100 p-8">
+                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 p-8">
                     <div className="flex items-center gap-3">
-                      <Users className="h-6 w-6 text-purple-600" />
+                      <Users className="h-6 w-6 text-blue-600" />
                       <CardTitle className="text-xl font-black">Add Participants</CardTitle>
                     </div>
                     <p className="text-gray-500 font-medium mt-2">Add participants who will receive an email invite to take the quiz</p>
@@ -1935,10 +1916,10 @@ export default function GenerateQuizPage() {
                             onChange={(e) => setNewEmail(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addParticipant())}
                             placeholder="Enter email address..."
-                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
+                            className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-blue-500 font-medium"
                           />
                         </div>
-                        <Button onClick={addParticipant} className="rounded-2xl gap-2 bg-purple-600 hover:bg-purple-700">
+                        <Button onClick={addParticipant} className="rounded-2xl gap-2 bg-blue-600 hover:bg-blue-700">
                           <Plus className="h-4 w-4" />
                           Add
                         </Button>
@@ -1972,7 +1953,7 @@ export default function GenerateQuizPage() {
                             {participants.map((p) => (
                               <div key={p.id} className="flex items-center justify-between px-4 py-3">
                                 <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-sm">
+                                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold text-sm">
                                     {p.firstName[0]}{p.lastName[0]}
                                   </div>
                                   <div>
@@ -1995,7 +1976,7 @@ export default function GenerateQuizPage() {
                       <Button
                         onClick={sendInvites}
                         disabled={participants.length === 0 || isSendingInvites}
-                        className="w-full h-14 rounded-2xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-bold text-lg gap-3 shadow-lg shadow-purple-200 disabled:opacity-50"
+                        className="w-full h-14 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-lg gap-3 shadow-lg shadow-blue-200 disabled:opacity-50"
                       >
                         {isSendingInvites ? (
                           <>
@@ -2033,28 +2014,28 @@ export default function GenerateQuizPage() {
                   </CardHeader>
                   <CardContent className="p-8">
                     <div className="space-y-6">
-                      <div className="bg-purple-50 rounded-2xl p-6">
+                      <div className="bg-blue-50 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-4">
-                          <h3 className="font-bold text-lg text-purple-900">Learner Access Link</h3>
-                          <Button variant="ghost" size="sm" onClick={copyInviteLink} className="gap-2 text-purple-600">
+                          <h3 className="font-bold text-lg text-blue-900">Learner Access Link</h3>
+                          <Button variant="ghost" size="sm" onClick={copyInviteLink} className="gap-2 text-blue-600">
                             <Copy className="h-4 w-4" />
                             Copy Link
                           </Button>
                         </div>
-                        <code className="text-sm bg-white px-4 py-3 rounded-xl border border-purple-200 font-mono block break-all text-purple-700">
+                        <code className="text-sm bg-white px-4 py-3 rounded-xl border border-blue-200 font-mono block break-all text-blue-700">
                           {typeof window !== 'undefined' ? `${window.location.origin}/quiz/take/${generatedQuiz.quiz.id}` : ''}
                         </code>
-                        <div className="flex items-center justify-between mt-4 p-4 bg-white rounded-xl border border-purple-100">
+                        <div className="flex items-center justify-between mt-4 p-4 bg-white rounded-xl border border-blue-100">
                           <div>
-                            <p className="text-[10px] font-black text-purple-400 uppercase tracking-widest">Quiz ID</p>
-                            <p className="text-sm font-mono font-bold text-purple-900">{generatedQuiz.quiz.id}</p>
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Quiz ID</p>
+                            <p className="text-sm font-mono font-bold text-blue-900">{generatedQuiz.quiz.id}</p>
                           </div>
-                          <Button variant="ghost" size="sm" onClick={copyQuizId} className="h-8 rounded-lg gap-2 text-purple-600">
+                          <Button variant="ghost" size="sm" onClick={copyQuizId} className="h-8 rounded-lg gap-2 text-blue-600">
                             <Copy className="h-3 w-3" />
                             Copy ID
                           </Button>
                         </div>
-                        <p className="text-xs text-purple-700 mt-3">
+                        <p className="text-xs text-blue-700 mt-3">
                           Participants can access the quiz using this link after receiving their invite email
                         </p>
                       </div>
@@ -2075,16 +2056,16 @@ export default function GenerateQuizPage() {
 
                       <div className="flex gap-4">
                         <Button
-                          onClick={() => router.push('/tutor/sessions')}
+                          onClick={() => router.push('/admin/dashboard')}
                           variant="outline"
                           className="flex-1 h-12 rounded-2xl gap-2"
                         >
                           <ArrowLeft className="h-4 w-4" />
-                          Back to Sessions
+                          Back to Dashboard
                         </Button>
                         <Button
                           onClick={() => { setTab('list'); resetForm(); }}
-                          className="flex-1 h-12 rounded-2xl bg-purple-600 hover:bg-purple-700 gap-2"
+                          className="flex-1 h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 gap-2"
                         >
                           <Sparkles className="h-4 w-4" />
                           View Past Quizzes
@@ -2120,407 +2101,6 @@ export default function GenerateQuizPage() {
         onClose={() => setShowPreview(false)}
         randomize={previewRandomize}
       />
-
-      {/* Dynamic Session Creation Modal */}
-      {showStartSessionModal && selectedQuizForSession && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-black text-gray-900">Start Session: {selectedQuizForSession.title}</h3>
-                <p className="text-xs text-gray-500 font-semibold mt-0.5">Spin up a new parallel session and invite participants.</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setShowStartSessionModal(false)} className="rounded-xl hover:bg-gray-200/50">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {!sessionCreatedData ? (
-                <>
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-widest">Session Name</label>
-                    <input
-                      type="text"
-                      value={sessionNameInput}
-                      onChange={(e) => setSessionNameInput(e.target.value)}
-                      placeholder="e.g. Morning Batch A"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium"
-                    />
-                  </div>
-
-                  <div className="space-y-4">
-                    <label className="text-xs font-bold text-gray-700 uppercase tracking-widest block">Add Participants</label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1">
-                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                        <input
-                          type="email"
-                          value={sessionNewEmail}
-                          onChange={(e) => setSessionNewEmail(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (!sessionNewEmail.trim()) return;
-                              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                              if (!emailRegex.test(sessionNewEmail)) {
-                                toast.error('Invalid email address');
-                                return;
-                              }
-                              if (sessionParticipants.some(p => p.email.toLowerCase() === sessionNewEmail.toLowerCase())) {
-                                toast.error('Email already added');
-                                return;
-                              }
-                              const parts = sessionNewEmail.split('@')[0].split('.');
-                              const fName = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase() : '';
-                              const lName = parts.length > 1 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase() : '';
-                              setSessionParticipants(prev => [...prev, { id: crypto.randomUUID(), email: sessionNewEmail, firstName: fName, lastName: lName, invited: false }]);
-                              setSessionNewEmail('');
-                            }
-                          }}
-                          placeholder="Type participant email and hit Enter..."
-                          className="w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-purple-500 font-medium text-sm"
-                        />
-                      </div>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => {
-                          const fileInput = document.createElement('input');
-                          fileInput.type = 'file';
-                          fileInput.accept = '.csv,.xlsx,.xls';
-                          fileInput.onchange = (e: any) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            const reader = new FileReader();
-                            reader.onload = (event) => {
-                              try {
-                                const text = event.target?.result as string;
-                                const lines = text.split('\n').filter(l => l.trim());
-                                if (lines.length < 2) {
-                                  toast.error('File must contain at least headers and one email');
-                                  return;
-                                }
-                                const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-                                const emailIdx = headers.findIndex(h => h.includes('email'));
-                                if (emailIdx === -1) {
-                                  toast.error('Could not find email column');
-                                  return;
-                                }
-                                const loaded: Participant[] = [];
-                                for (let i = 1; i < lines.length; i++) {
-                                  const cols = lines[i].split(',').map(c => c.trim());
-                                  const email = cols[emailIdx];
-                                  if (email && !sessionParticipants.some(p => p.email.toLowerCase() === email.toLowerCase()) && !loaded.some(p => p.email.toLowerCase() === email.toLowerCase())) {
-                                    const parts = email.split('@')[0].split('.');
-                                    const fName = parts[0] ? parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase() : '';
-                                    const lName = parts.length > 1 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1).toLowerCase() : '';
-                                    loaded.push({ id: crypto.randomUUID(), email, firstName: fName, lastName: lName, invited: false });
-                                  }
-                                }
-                                setSessionParticipants(prev => [...prev, ...loaded]);
-                                toast.success(`Uploaded ${loaded.length} participants`);
-                              } catch {
-                                toast.error('Failed to parse file. Use a CSV file.');
-                              }
-                            };
-                            reader.readAsText(file);
-                          };
-                          fileInput.click();
-                        }}
-                        className="rounded-2xl border-gray-200 hover:bg-gray-50 flex gap-2 text-xs font-bold"
-                      >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        CSV Import
-                      </Button>
-                    </div>
-
-                    {sessionParticipants.length > 0 ? (
-                      <div className="border border-gray-150 rounded-2xl overflow-hidden max-h-56 overflow-y-auto">
-                        <div className="bg-gray-55 px-4 py-2 border-b border-gray-100 flex justify-between items-center text-xs font-black text-gray-500 uppercase tracking-widest">
-                          <span>{sessionParticipants.length} Participants</span>
-                          <button onClick={() => setSessionParticipants([])} className="text-red-500 hover:text-red-650 font-bold">Clear All</button>
-                        </div>
-                        <div className="divide-y divide-gray-100">
-                          {sessionParticipants.map((p) => (
-                            <div key={p.id} className="flex justify-between items-center px-4 py-2 hover:bg-gray-50/50">
-                              <div>
-                                <span className="text-sm font-bold text-gray-800">{p.email}</span>
-                                <span className="text-xs text-gray-400 font-medium ml-2">({p.firstName} {p.lastName})</span>
-                              </div>
-                              <button
-                                onClick={() => setSessionParticipants(prev => prev.filter(item => item.id !== p.id))}
-                                className="text-gray-400 hover:text-red-500 p-1"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 border-2 border-dashed border-gray-100 rounded-2xl text-gray-400 text-xs font-bold">
-                        No participants added to this session yet.
-                      </div>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <div className="space-y-6">
-                  <div className="p-5 bg-green-50/50 border border-green-200/50 rounded-3xl flex items-center gap-4">
-                    <div className="p-3 bg-green-100 text-green-700 rounded-full">
-                      <CheckCircle2 className="h-8 w-8" />
-                    </div>
-                    <div>
-                      <h4 className="font-extrabold text-green-900 text-lg">Session Created Successfully!</h4>
-                      <p className="text-xs text-green-700 font-bold uppercase tracking-widest mt-0.5">Session Name: {sessionCreatedData.sessionName}</p>
-                    </div>
-                  </div>
-
-                  <div className="bg-purple-50/50 p-5 rounded-3xl border border-purple-100/50 space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-black text-purple-900 uppercase tracking-widest">Global Session Invitation Link</span>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          navigator.clipboard.writeText(sessionCreatedData.inviteLink);
-                          toast.success('Invitation link copied!');
-                        }}
-                        className="text-purple-700 hover:bg-purple-100 gap-1.5 h-8 font-bold"
-                      >
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy Link
-                      </Button>
-                    </div>
-                    <code className="block text-xs font-mono bg-white border border-purple-200/70 p-3 rounded-2xl break-all text-purple-700 font-bold select-all">
-                      {sessionCreatedData.inviteLink}
-                    </code>
-                  </div>
-
-                  {sessionCreatedData.invites && sessionCreatedData.invites.length > 0 && (
-                    <div className="space-y-3">
-                      <span className="text-xs font-black text-gray-500 uppercase tracking-widest block">Learner Access Tokens & Personal Links</span>
-                      <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100 max-h-60 overflow-y-auto">
-                        {sessionCreatedData.invites.map((invite: any, idx: number) => {
-                          const pLink = `${window.location.origin}/quiz/take/${selectedQuizForSession.id}?token=${invite.token}`;
-                          return (
-                            <div key={idx} className="p-3.5 bg-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
-                              <div>
-                                <p className="font-extrabold text-gray-800">{invite.email}</p>
-                                <p className="font-mono text-gray-400 mt-0.5">Token: {invite.token}</p>
-                              </div>
-                              <div className="flex gap-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(invite.token);
-                                    toast.success('Token copied!');
-                                  }}
-                                  className="h-8 rounded-lg font-bold border-gray-200"
-                                >
-                                  Copy Token
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(pLink);
-                                    toast.success('Personal link copied!');
-                                  }}
-                                  className="h-8 rounded-lg font-bold bg-purple-50 border-purple-100 text-purple-700 hover:bg-purple-100"
-                                >
-                                  Copy Personal Link
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-gray-100 flex gap-3 justify-end">
-              {!sessionCreatedData ? (
-                <>
-                  <Button variant="outline" onClick={() => setShowStartSessionModal(false)} className="rounded-xl font-bold">
-                    Cancel
-                  </Button>
-                  <Button
-                    onClick={handleCreateSessionSubmit}
-                    disabled={isCreatingSession || !sessionNameInput.trim()}
-                    className="rounded-xl font-bold bg-purple-600 hover:bg-purple-700 shadow-md shadow-purple-100 gap-2"
-                  >
-                    {isCreatingSession ? (
-                      <>
-                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="h-4 w-4 fill-current" />
-                        Create Session
-                      </>
-                    )}
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={() => setShowStartSessionModal(false)} className="rounded-xl font-bold bg-purple-600 hover:bg-purple-700">
-                  Done
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Session Reports & Analytics Modal */}
-      {activeReportsQuiz && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-purple-50 to-pink-50 flex items-center justify-between">
-              <div>
-                <h3 className="text-xl font-black text-gray-900">Session Reports & Metrics: {activeReportsQuiz.title}</h3>
-                <p className="text-xs text-gray-500 font-semibold mt-0.5">Track participant status, view test performance, or reset test sessions.</p>
-              </div>
-              <Button variant="ghost" size="icon" onClick={() => setActiveReportsQuiz(null)} className="rounded-xl hover:bg-gray-200/50">
-                <X className="h-5 w-5" />
-              </Button>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              {loadingSessions ? (
-                <div className="flex flex-col items-center justify-center py-20 gap-3">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-t-2 border-pink-500" />
-                  <p className="text-xs font-bold text-pink-500 uppercase tracking-widest">Fetching session reports...</p>
-                </div>
-              ) : quizSessions.length === 0 ? (
-                <div className="text-center py-16 text-gray-400 font-bold max-w-md mx-auto">
-                  <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-100">
-                    <BarChart2 className="h-8 w-8 text-gray-400" />
-                  </div>
-                  <p className="text-sm">No active sessions found for this quiz yet.</p>
-                  <p className="text-xs text-gray-400 mt-1 font-medium">Click &apos;Start Session&apos; on the past quizzes page to spin up a session for your learners.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {quizSessions.map((session: any) => {
-                    const isExpanded = expandedSessionId === session.id;
-                    const completedParticipants = session.participants?.filter((p: any) => p.status === 'completed') || [];
-                    const participationRate = session.participants?.length > 0
-                      ? Math.round((completedParticipants.length / session.participants.length) * 100)
-                      : 0;
-                    
-                    const totalScore = completedParticipants.reduce((acc: number, p: any) => acc + (p.percentageScore || 0), 0);
-                    const avgScore = completedParticipants.length > 0 ? Math.round(totalScore / completedParticipants.length) : null;
-
-                    return (
-                      <div key={session.id} className="border border-gray-100 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-shadow">
-                        <div
-                          onClick={() => setExpandedSessionId(isExpanded ? null : session.id)}
-                          className="p-5 bg-gray-55/30 border-b border-gray-100/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:bg-purple-50/10 transition-colors"
-                        >
-                          <div>
-                            <h4 className="font-extrabold text-gray-900 text-base">{session.sessionName || 'Unnamed Session'}</h4>
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 font-bold mt-1.5">
-                              <span className="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-lg border border-purple-100/30">ID: {session.id.slice(0, 8)}...</span>
-                              <span className="flex items-center gap-1"><Calendar className="h-3.5 w-3.5" />{new Date(session.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-4">
-                            <div className="text-center sm:text-right">
-                              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Avg Score</p>
-                              <p className="text-sm font-black text-gray-800">{avgScore !== null ? `${avgScore}%` : 'N/A'}</p>
-                            </div>
-                            <div className="text-center sm:text-right">
-                              <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Completed</p>
-                              <p className="text-sm font-black text-gray-800">{completedParticipants.length} / {session.participants?.length || 0} ({participationRate}%)</p>
-                            </div>
-                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-gray-100">
-                              {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                            </Button>
-                          </div>
-                        </div>
-
-                        {isExpanded && (
-                          <div className="p-5 overflow-x-auto border-t border-gray-100 bg-gray-50/10">
-                            {session.participants && session.participants.length > 0 ? (
-                              <table className="w-full text-xs text-left border-collapse">
-                                <thead>
-                                  <tr className="border-b border-gray-150 text-gray-400 uppercase tracking-widest font-black">
-                                    <th className="py-2.5 px-3">Participant</th>
-                                    <th className="py-2.5 px-3 text-center">Status</th>
-                                    <th className="py-2.5 px-3 text-center">Score</th>
-                                    <th className="py-2.5 px-3 text-center">Completed At</th>
-                                    <th className="py-2.5 px-3 text-right">Actions</th>
-                                  </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-100">
-                                  {session.participants.map((p: any) => {
-                                    let statusColor = 'bg-gray-100 text-gray-700';
-                                    if (p.status === 'completed') statusColor = 'bg-green-50 text-green-700 border-green-100/50';
-                                    else if (p.status === 'started') statusColor = 'bg-blue-50 text-blue-700 border-blue-100/50';
-
-                                    return (
-                                      <tr key={p.id} className="hover:bg-white transition-colors">
-                                        <td className="py-3 px-3">
-                                          <div>
-                                            <p className="font-bold text-gray-800">{p.name || 'Anonymous'}</p>
-                                            <p className="text-[10px] text-gray-400 font-medium">{p.email}</p>
-                                          </div>
-                                        </td>
-                                        <td className="py-3 px-3 text-center">
-                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-lg border font-black uppercase text-[9px] ${statusColor}`}>
-                                            {p.status}
-                                          </span>
-                                        </td>
-                                        <td className="py-3 px-3 text-center font-extrabold text-gray-800 text-sm">
-                                          {p.percentageScore !== null ? `${p.percentageScore}%` : '-'}
-                                        </td>
-                                        <td className="py-3 px-3 text-center text-gray-500 font-medium">
-                                          {p.completedAt ? new Date(p.completedAt).toLocaleString() : '-'}
-                                        </td>
-                                        <td className="py-3 px-3 text-right">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            className="h-8 gap-1 rounded-lg border-red-200 text-red-600 hover:bg-red-50 font-bold hover:border-red-300"
-                                            onClick={() => handleResetParticipant(p.id)}
-                                          >
-                                            <RefreshCw className="h-3 w-3" />
-                                            Reset Attempt
-                                          </Button>
-                                        </td>
-                                      </tr>
-                                    );
-                                  })}
-                                </tbody>
-                              </table>
-                            ) : (
-                              <p className="text-center py-4 text-gray-400 font-bold">No participants registered in this session.</p>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-
-            <div className="p-6 border-t border-gray-100 flex justify-end">
-              <Button onClick={() => setActiveReportsQuiz(null)} className="rounded-xl px-6 bg-purple-600 hover:bg-purple-700 font-bold">
-                Close Reports
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

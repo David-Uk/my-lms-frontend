@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { BookOpen, Award, Clock, Target, ArrowRight, Play, Zap, Sparkles, Loader2, Users } from 'lucide-react';
+import { Card } from '@/components/ui/card';
+import { BookOpen, Award, Clock, Target, ArrowRight, Play, Zap, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { StatCard } from '@/components/dashboard/stat-card';
@@ -193,7 +193,7 @@ export default function LearnerDashboardPage() {
 
             <div className="space-y-4">
               <Link href="/learner/join-quiz" className="block group">
-                <Card className="border-none shadow-lg hover:shadow-2xl hover:shadow-blue-100 transition-all duration-300 p-6 bg-gradient-to-br from-gray-900 to-black text-white rounded-3xl overflow-hidden relative">
+                <Card className="border-none shadow-lg hover:shadow-2xl hover:shadow-blue-100 transition-all duration-300 p-6 bg-linear-to-br from-gray-900 to-black text-white rounded-3xl overflow-hidden relative">
                   <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-500/40 transition-colors" />
                   <div className="relative z-10 flex items-center gap-4">
                     <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/50">
@@ -251,7 +251,7 @@ function CourseProgressCard({ id, title, progress, lastAccessed, gradient }: { i
           <div className="flex justify-between items-end">
             <span className="text-2xl font-black text-gray-900">{progress}%</span>
             <Link href={`/learner/courses/${id}`}>
-              <Button className={`h-10 w-10 rounded-xl bg-gradient-to-br ${gradient} shadow-lg text-white transition-transform active:scale-90 group-hover:rotate-12`}>
+              <Button className={`h-10 w-10 rounded-xl bg-linear-to-br ${gradient} shadow-lg text-white transition-transform active:scale-90 group-hover:rotate-12`}>
                 <Play className="h-4 w-4 fill-white" />
               </Button>
             </Link>
