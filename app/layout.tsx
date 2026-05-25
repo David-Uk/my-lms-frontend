@@ -15,7 +15,7 @@ const roboto = Roboto({
 });
 
 export const metadata: Metadata = {
-  title: "LMS - Learning Management System",
+  title: "Edo Innovates LMS",
   description: "A comprehensive learning management system for modern education",
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'),
   robots: {
@@ -26,10 +26,31 @@ export const metadata: Metadata = {
     width: 'device-width',
     initialScale: 1,
     maximumScale: 1,
+    viewportFit: 'cover',
+  },
+  manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+      { url: '/icons/icon-512x512.svg', sizes: '512x512', type: 'image/svg+xml' },
+    ],
+    apple: [
+      { url: '/icons/icon-192x192.svg', sizes: '192x192', type: 'image/svg+xml' },
+    ],
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'black-translucent',
+    'apple-mobile-web-app-title': 'Edo LMS',
+    'format-detection': 'telephone=no',
+    'mobile-web-app-capable': 'yes',
+    'msapplication-TileColor': '#004D20',
+    'theme-color': '#004D20',
   },
 };
 
 import { ToastContainer } from "@/components/ui/toast-container";
+import { ServiceWorkerRegister } from "@/components/pwa/service-worker-register";
 
 export default function RootLayout({
   children,
@@ -45,6 +66,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col font-roboto">
         {children}
         <ToastContainer />
+        <ServiceWorkerRegister />
       </body>
     </html>
   );
