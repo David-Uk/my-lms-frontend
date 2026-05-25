@@ -100,9 +100,23 @@ export const useAuthStore = create<AuthState>()(
   )
 );
 
-// Auth hooks
+// ─── Optimized fine-grained selector hooks ───────────────
+// Each hook subscribes only to the slice of state it needs,
+// preventing unnecessary re-renders when unrelated state changes.
+
 export function useAuth() {
-  return useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isLoading = useAuthStore((s) => s.isLoading);
+  const logout = useAuthStore((s) => s.logout);
+  const login = useAuthStore((s) => s.login);
+  const updateUser = useAuthStore((s) => s.updateUser);
+  const checkAuth = useAuthStore((s) => s.checkAuth);
+  const getUserRole = useAuthStore((s) => s.getUserRole);
+  const hasRole = useAuthStore((s) => s.hasRole);
+
+  return { user, token, isAuthenticated, isLoading, logout, login, updateUser, checkAuth, getUserRole, hasRole };
 }
 
 export function useUserRole(): UserRole | null {
@@ -143,4 +157,23 @@ export function useCanManageCourses(): boolean {
     const role = state.getUserRole();
     return role === 'admin' || role === 'superadmin';
   });
+}
+
+export function useUserFirstName(): string | null {
+  return useAuthStore((s) => s.user?.firstName ?? null);
+}
+
+export function useUserFullName(): string | null {
+  const firstName = useAuthStore((s) => s.user?.firstName);
+  const lastName = useAuthStore((s) => s.user?.lastName);
+  if (!firstName && !lastName) return null;
+  return `${firstName || ''} ${lastName || ''}`.trim();
+}
+
+export function useAuthLoading(): boolean {
+  return useAuthStore((s) => s.isLoading);
+}
+
+export function useIsAuthenticated(): boolean {
+  return useAuthStore((s) => s.isAuthenticated);
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, lazy, Suspense } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,7 +22,8 @@ import {
   Filter,
   TrendingUp,
   Sparkles,
-  Pencil
+  Pencil,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -30,16 +31,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  XAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
+import { StatCard } from '@/components/dashboard/stat-card';
+
+// Dynamic import of heavy Recharts library
+const RechartsCharts = lazy(() => import('./_charts'));
 
 interface PaginationState {
   page: number;
@@ -153,9 +148,9 @@ export default function SuperAdminDashboardPage() {
   useEffect(() => {
     fetchUsers();
     fetchStats();
-    
+
     // Log visit
-    api.post('/stats/visit', { path: '/superadmin/dashboard' }).catch(err => console.error('Failed to log visit', err));
+    api.post('/stats/visit', { path: '/superadmin/dashboard' }).catch(() => {});
   }, [fetchUsers]);
 
   const handleDeactivate = async (userId: string) => {
@@ -185,7 +180,6 @@ export default function SuperAdminDashboardPage() {
       fetchStats();
     } catch (error) {
       console.error('Failed to delete user:', error);
-      alert('Failed to delete user');
     }
   };
 
@@ -219,26 +213,6 @@ export default function SuperAdminDashboardPage() {
     );
   };
 
-  const aiIntegrationData = [
-    { name: 'Quizzes Generated', value: stats.totalQuizzes },
-    { name: 'Total Questions', value: stats.totalQuestions },
-  ];
-
-  const attendanceData = [
-    { name: 'Present', value: stats.attendancePresent },
-    { name: 'Absent/Late', value: stats.attendanceAbsent },
-    { name: 'Unmarked', value: Math.max(0, stats.totalAttendances - stats.attendancePresent - stats.attendanceAbsent) },
-  ];
-
-  const trafficData = [
-    { name: 'Desktop', value: stats.desktopVisits },
-    { name: 'Mobile', value: stats.mobileVisits },
-    { name: 'Tablet', value: stats.tabletVisits },
-  ];
-
-  const PIE_COLORS = ['#10b981', '#f59e0b', '#ef4444'];
-  const TRAFFIC_COLORS = ['#3b82f6', '#8b5cf6', '#14b8a6'];
-
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -258,151 +232,55 @@ export default function SuperAdminDashboardPage() {
         </div>
 
         <div className="flex space-x-2 border-b border-gray-100 pb-4">
-          <button
-            onClick={() => setActiveTab('overview')}
-            className={`px-4 py-2 font-bold text-sm rounded-full transition-colors ${activeTab === 'overview' ? 'bg-[#004D20] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-          >
-            Overview & AI
-          </button>
-          <button
-            onClick={() => setActiveTab('users')}
-            className={`px-4 py-2 font-bold text-sm rounded-full transition-colors ${activeTab === 'users' ? 'bg-[#004D20] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-          >
-            User Management
-          </button>
-          <button
-            onClick={() => setActiveTab('traffic')}
-            className={`px-4 py-2 font-bold text-sm rounded-full transition-colors ${activeTab === 'traffic' ? 'bg-[#004D20] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'}`}
-          >
-            Traffic Analytics
-          </button>
+          {(['overview', 'users', 'traffic'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 font-bold text-sm rounded-full transition-colors capitalize ${
+                activeTab === tab ? 'bg-[#004D20] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'
+              }`}
+            >
+              {tab === 'overview' ? 'Overview & AI' : tab === 'users' ? 'User Management' : 'Traffic Analytics'}
+            </button>
+          ))}
         </div>
 
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                title="Total Courses"
-                value={loading ? '—' : stats.totalCourses}
-                description="Available courses"
-                icon={<BookOpen className="h-5 w-5 text-emerald-600" />}
-                color="emerald"
-              />
-              <StatCard
-                title="Total Enrollments"
-                value={loading ? '—' : stats.totalEnrollments}
-                description="Across all courses"
-                icon={<GraduationCap className="h-5 w-5 text-purple-600" />}
-                color="purple"
-              />
-              <StatCard
-                title="Completion Rate"
-                value={loading ? '—' : `${stats.completionRate}%`}
-                description="Overall success rate"
-                icon={<TrendingUp className="h-5 w-5 text-orange-600" />}
-                color="orange"
-              />
-              <StatCard
-                title="AI Quizzes"
-                value={loading ? '—' : stats.totalQuizzes}
-                description="Generated quizzes"
-                icon={<Sparkles className="h-5 w-5 text-blue-600" />}
-                color="blue"
-              />
+              <StatCard title="Total Courses" value={loading ? '—' : stats.totalCourses} description="Available courses" icon={<BookOpen className="h-5 w-5 text-emerald-600" />} color="emerald" />
+              <StatCard title="Total Enrollments" value={loading ? '—' : stats.totalEnrollments} description="Across all courses" icon={<GraduationCap className="h-5 w-5 text-purple-600" />} color="purple" />
+              <StatCard title="Completion Rate" value={loading ? '—' : `${stats.completionRate}%`} description="Overall success rate" icon={<TrendingUp className="h-5 w-5 text-orange-600" />} color="orange" />
+              <StatCard title="AI Quizzes" value={loading ? '—' : stats.totalQuizzes} description="Generated quizzes" icon={<Sparkles className="h-5 w-5 text-blue-600" />} color="blue" />
             </div>
-            <div className="grid lg:grid-cols-2 gap-8">
-          <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[2.5rem]">
-            <CardHeader className="p-8 pb-0">
-              <CardTitle className="text-xl font-black text-gray-900">AI Integrations</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 h-[300px]">
-              {loading ? (
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#004D20]" />
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={aiIntegrationData}>
-                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12, fontWeight: 600 }} />
-                    <Tooltip 
-                      cursor={{ fill: '#f3f4f6' }}
-                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                    <Bar dataKey="value" fill="#8b5cf6" radius={[6, 6, 0, 0]} barSize={40} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[2.5rem]">
-            <CardHeader className="p-8 pb-0">
-              <CardTitle className="text-xl font-black text-gray-900">System Attendance</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 h-[300px]">
-              {loading ? (
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#004D20]" />
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={attendanceData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {attendanceData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+            <Suspense fallback={<ChartsFallback />}>
+              <RechartsCharts
+                totalQuizzes={stats.totalQuizzes}
+                totalQuestions={stats.totalQuestions}
+                attendancePresent={stats.attendancePresent}
+                attendanceAbsent={stats.attendanceAbsent}
+                totalAttendances={stats.totalAttendances}
+                completionRate={stats.completionRate}
+                totalLearners={stats.totalLearners}
+                totalTutors={stats.totalTutors}
+                activeLearners={stats.activeLearners}
+                totalEnrollments={stats.totalEnrollments}
+                desktopVisits={stats.desktopVisits}
+                mobileVisits={stats.mobileVisits}
+                tabletVisits={stats.tabletVisits}
+                totalVisits={stats.totalVisits}
+              />
+            </Suspense>
         </div>
         )}
 
         {activeTab === 'users' && (
           <div className="space-y-8">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-              <StatCard
-                title="Total Users"
-                value={loading ? '—' : stats.totalUsers}
-                description="System-wide accounts"
-                icon={<Users className="h-5 w-5 text-blue-600" />}
-                color="blue"
-              />
-              <StatCard
-                title="Total Learners"
-                value={loading ? '—' : stats.totalLearners}
-                description="Registered students"
-                icon={<GraduationCap className="h-5 w-5 text-emerald-600" />}
-                color="emerald"
-              />
-              <StatCard
-                title="Total Tutors"
-                value={loading ? '—' : stats.totalTutors}
-                description="Instructors"
-                icon={<BookOpen className="h-5 w-5 text-purple-600" />}
-                color="purple"
-              />
-              <StatCard
-                title="Active Learners"
-                value={loading ? '—' : stats.activeLearners}
-                description="Currently engaged"
-                icon={<Sparkles className="h-5 w-5 text-[#004D20]" />}
-                color="green"
-              />
+              <StatCard title="Total Users" value={loading ? '—' : stats.totalUsers} description="System-wide accounts" icon={<Users className="h-5 w-5 text-blue-600" />} color="blue" />
+              <StatCard title="Total Learners" value={loading ? '—' : stats.totalLearners} description="Registered students" icon={<GraduationCap className="h-5 w-5 text-emerald-600" />} color="emerald" />
+              <StatCard title="Total Tutors" value={loading ? '—' : stats.totalTutors} description="Instructors" icon={<BookOpen className="h-5 w-5 text-purple-600" />} color="purple" />
+              <StatCard title="Active Learners" value={loading ? '—' : stats.activeLearners} description="Currently engaged" icon={<Sparkles className="h-5 w-5 text-[#004D20]" />} color="green" />
             </div>
         <div className="grid lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 border-none shadow-2xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden">
@@ -443,7 +321,7 @@ export default function SuperAdminDashboardPage() {
 
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#004D20]" />
+                  <Loader2 className="h-8 w-8 animate-spin text-[#004D20]" />
                 </div>
               ) : users.length === 0 ? (
                 <div className="text-center py-12">
@@ -496,9 +374,7 @@ export default function SuperAdminDashboardPage() {
                               </div>
                             </div>
                           </td>
-                          <td className="py-4 px-4">
-                            {getRoleBadge(user.role)}
-                          </td>
+                          <td className="py-4 px-4">{getRoleBadge(user.role)}</td>
                           <td className="py-4 px-4">
                             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold ${
                               user.status === 'active'
@@ -539,21 +415,12 @@ export default function SuperAdminDashboardPage() {
                                   className={user.status === 'active' ? 'text-red-600' : 'text-green-600'}
                                 >
                                   {user.status === 'active' ? (
-                                    <>
-                                      <UserX className="mr-2 h-4 w-4" />
-                                      Deactivate
-                                    </>
+                                    <><UserX className="mr-2 h-4 w-4" />Deactivate</>
                                   ) : (
-                                    <>
-                                      <UserCheck className="mr-2 h-4 w-4" />
-                                      Activate
-                                    </>
+                                    <><UserCheck className="mr-2 h-4 w-4" />Activate</>
                                   )}
                                 </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDelete(user.id)}
-                                  className="text-red-600 focus:text-red-600"
-                                >
+                                <DropdownMenuItem onClick={() => handleDelete(user.id)} className="text-red-600 focus:text-red-600">
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Delete User
                                 </DropdownMenuItem>
@@ -573,22 +440,10 @@ export default function SuperAdminDashboardPage() {
                     Showing {((pagination.page - 1) * pagination.limit) + 1} to {Math.min(pagination.page * pagination.limit, pagination.total)} of {pagination.total} users
                   </p>
                   <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-xl"
-                      disabled={pagination.page === 1}
-                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}
-                    >
+                    <Button variant="outline" size="sm" className="rounded-xl" disabled={pagination.page === 1} onClick={() => setPagination(prev => ({ ...prev, page: prev.page - 1 }))}>
                       Previous
                     </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="rounded-xl"
-                      disabled={pagination.page >= pagination.totalPages}
-                      onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}
-                    >
+                    <Button variant="outline" size="sm" className="rounded-xl" disabled={pagination.page >= pagination.totalPages} onClick={() => setPagination(prev => ({ ...prev, page: prev.page + 1 }))}>
                       Next
                     </Button>
                   </div>
@@ -608,62 +463,39 @@ export default function SuperAdminDashboardPage() {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Completion Rate</p>
                 <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-[#004D20] rounded-full transition-all duration-1000"
-                    style={{ width: `${stats.completionRate}%` }}
-                  />
+                  <div className="h-full bg-[#004D20] rounded-full transition-all duration-1000" style={{ width: `${stats.completionRate}%` }} />
                 </div>
-                <p className="text-xs text-gray-400 mt-1 font-medium">
-                  {stats.completionRate}% of enrollments completed
-                </p>
+                <p className="text-xs text-gray-400 mt-1 font-medium">{stats.completionRate}% of enrollments completed</p>
               </div>
-
               <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Total Learners</span>
-                  <span className="font-bold text-blue-400">{stats.totalLearners}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Total Tutors</span>
-                  <span className="font-bold text-emerald-400">{stats.totalTutors}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Active Learners</span>
-                  <span className="font-bold text-purple-400">{stats.activeLearners}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Total Enrollments</span>
-                  <span className="font-bold text-[#004D20]">{stats.totalEnrollments}</span>
-                </div>
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Learners</span><span className="font-bold text-blue-400">{stats.totalLearners}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Tutors</span><span className="font-bold text-emerald-400">{stats.totalTutors}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Active Learners</span><span className="font-bold text-purple-400">{stats.activeLearners}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Enrollments</span><span className="font-bold text-[#004D20]">{stats.totalEnrollments}</span></div>
               </div>
-
               <div className="pt-4 space-y-3">
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Quick Actions</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Link href="/superadmin/courses/create" className="block">
                     <Button className="w-full rounded-2xl h-10 bg-[#004D20] hover:bg-[#003D1A] gap-1.5 text-xs font-bold shadow-lg shadow-green-900/20">
-                      <BookOpen className="h-3.5 w-3.5" />
-                      New Course
+                      <BookOpen className="h-3.5 w-3.5" />New Course
                     </Button>
                   </Link>
                   <Link href="/superadmin/quiz/create" className="block">
                     <Button className="w-full rounded-2xl h-10 bg-[#004D20] hover:bg-[#003D1A] gap-1.5 text-xs font-bold shadow-lg shadow-green-900/20">
-                      <Sparkles className="h-3.5 w-3.5" />
-                      New Quiz
+                      <Sparkles className="h-3.5 w-3.5" />New Quiz
                     </Button>
                   </Link>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <Link href="/admin/users/create" className="block">
                     <Button variant="outline" className="w-full rounded-2xl h-10 border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 text-xs font-bold">
-                      <Plus className="h-3.5 w-3.5" />
-                      Add User
+                      <Plus className="h-3.5 w-3.5" />Add User
                     </Button>
                   </Link>
                   <Link href="/admin/users" className="block">
                     <Button variant="outline" className="w-full rounded-2xl h-10 border-gray-700 text-gray-300 hover:bg-gray-800 gap-1.5 text-xs font-bold">
-                      <Users className="h-3.5 w-3.5" />
-                      Users
+                      <Users className="h-3.5 w-3.5" />Users
                     </Button>
                   </Link>
                 </div>
@@ -677,127 +509,43 @@ export default function SuperAdminDashboardPage() {
       {activeTab === 'traffic' && (
         <div className="space-y-8">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard
-              title="Unique Visitors"
-              value={loading ? '—' : stats.totalVisits}
-              description="Platform traffic"
-              icon={<Filter className="h-5 w-5 text-[#004D20]" />}
-              color="green"
-            />
-            <StatCard
-              title="Desktop Visits"
-              value={loading ? '—' : stats.desktopVisits}
-              description="Desktop users"
-              icon={<Filter className="h-5 w-5 text-blue-600" />}
-              color="blue"
-            />
-            <StatCard
-              title="Mobile Visits"
-              value={loading ? '—' : stats.mobileVisits}
-              description="Mobile users"
-              icon={<Filter className="h-5 w-5 text-purple-600" />}
-              color="purple"
-            />
-            <StatCard
-              title="System Attendances"
-              value={loading ? '—' : stats.totalAttendances}
-              description="Overall marked attendance"
-              icon={<Calendar className="h-5 w-5 text-orange-600" />}
-              color="orange"
-            />
+            <StatCard title="Unique Visitors" value={loading ? '—' : stats.totalVisits} description="Platform traffic" icon={<Filter className="h-5 w-5 text-[#004D20]" />} color="green" />
+            <StatCard title="Desktop Visits" value={loading ? '—' : stats.desktopVisits} description="Desktop users" icon={<Filter className="h-5 w-5 text-blue-600" />} color="blue" />
+            <StatCard title="Mobile Visits" value={loading ? '—' : stats.mobileVisits} description="Mobile users" icon={<Filter className="h-5 w-5 text-purple-600" />} color="purple" />
+            <StatCard title="System Attendances" value={loading ? '—' : stats.totalAttendances} description="Overall marked attendance" icon={<Calendar className="h-5 w-5 text-orange-600" />} color="orange" />
           </div>
-        <div className="grid lg:grid-cols-2 gap-8">
-          <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[2.5rem]">
-            <CardHeader className="p-8 pb-0">
-              <CardTitle className="text-xl font-black text-gray-900">Traffic by Device Type</CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 h-[350px]">
-              {loading ? (
-                <div className="flex justify-center items-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#004D20]" />
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={trafficData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {trafficData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={TRAFFIC_COLORS[index % TRAFFIC_COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
-            </CardContent>
-          </Card>
-          
-          <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[2.5rem] bg-gray-900 text-white">
-            <CardHeader className="p-8">
-              <CardTitle className="text-xl font-black flex items-center gap-2">
-                <Filter className="h-5 w-5 text-blue-400" />
-                Visitor Metrics
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-8 pt-0 space-y-6">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Total Unique Visits</span>
-                  <span className="font-bold text-white text-xl">{stats.totalVisits}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Desktop Users</span>
-                  <span className="font-bold text-blue-400">{stats.desktopVisits}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Mobile Users</span>
-                  <span className="font-bold text-purple-400">{stats.mobileVisits}</span>
-                </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-400">Tablet Users</span>
-                  <span className="font-bold text-teal-400">{stats.tabletVisits}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <Suspense fallback={<ChartsFallback />}>
+          <RechartsCharts
+            totalQuizzes={stats.totalQuizzes}
+            totalQuestions={stats.totalQuestions}
+            attendancePresent={stats.attendancePresent}
+            attendanceAbsent={stats.attendanceAbsent}
+            totalAttendances={stats.totalAttendances}
+            completionRate={stats.completionRate}
+            totalLearners={stats.totalLearners}
+            totalTutors={stats.totalTutors}
+            activeLearners={stats.activeLearners}
+            totalEnrollments={stats.totalEnrollments}
+            desktopVisits={stats.desktopVisits}
+            mobileVisits={stats.mobileVisits}
+            tabletVisits={stats.tabletVisits}
+            totalVisits={stats.totalVisits}
+          />
+        </Suspense>
         </div>
       )}
     </div>
   );
 }
-function StatCard({ title, value, description, icon, color }: { title: string; value: string | number; description: string; icon: React.ReactNode; color: string }) {
-  const colors: Record<string, string> = {
-    blue: 'bg-blue-50 text-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-    orange: 'bg-orange-50 text-orange-600',
-    green: 'bg-green-50 text-green-600',
-  };
 
+function ChartsFallback() {
   return (
-    <Card className="border-none shadow-lg shadow-gray-100 rounded-3xl overflow-hidden hover:scale-[1.02] transition-transform duration-300">
-      <CardContent className="p-6">
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-2xl ${colors[color]}`}>
-            {icon}
-          </div>
-          <div>
-            <div className="text-2xl font-black text-gray-900">{value}</div>
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-0.5">{title}</p>
-            <p className="text-[10px] text-gray-400 font-medium mt-1">{description}</p>
-          </div>
+    <div className="grid lg:grid-cols-2 gap-8">
+      {[1, 2].map((i) => (
+        <div key={i} className="h-[350px] bg-gray-50 rounded-[2.5rem] animate-pulse flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-gray-300" />
         </div>
-      </CardContent>
-    </Card>
+      ))}
+    </div>
   );
 }
