@@ -54,7 +54,7 @@ export function setToken(token: string): void {
   if (typeof window !== 'undefined') {
     // Write to the direct key (read by getToken)
     localStorage.setItem('token', token);
-    // Set cookie for server-side middleware access
+    // Set cookie for server-side proxy access
     const isSecure = window.location.protocol === 'https:';
     const secureFlag = isSecure ? '; Secure' : '';
     document.cookie = `token=${token}; path=/; max-age=86400; SameSite=Lax${secureFlag}`;

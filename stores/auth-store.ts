@@ -91,7 +91,7 @@ export const useAuthStore = create<AuthState>()(
             removeToken();
           } else if (state.token) {
             // Re-sync the direct localStorage key and cookie so getToken() and
-            // the middleware cookie check both work after a page refresh
+            // the proxy cookie check both work after a page refresh
             setToken(state.token);
           }
         }
