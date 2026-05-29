@@ -2,7 +2,6 @@
 
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Button } from '@/components/ui/button';
 import { SlideDecksView } from '@/components/slides/SlideDecksView';
 import { ArrowLeft } from 'lucide-react';
@@ -12,18 +11,16 @@ export default function TutorCourseSlidesPage() {
   const courseId = params.id as string;
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Link href={`/tutor/courses`}>
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back to Courses
-            </Button>
-          </Link>
-        </div>
-        <SlideDecksView courseId={courseId} />
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Link href={`/tutor/courses`}>
+          <Button variant="ghost" size="sm">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Courses
+          </Button>
+        </Link>
       </div>
-    </DashboardLayout>
+      <SlideDecksView courseId={courseId} />
+    </div>
   );
 }

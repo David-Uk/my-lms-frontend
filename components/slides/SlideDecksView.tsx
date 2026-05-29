@@ -8,14 +8,17 @@ import { api } from '@/lib/api';
 import { SlideDeckListItem } from '@/types';
 import { SlideDeckGenerator } from './SlideDeckGenerator';
 import { SlideDeckEditor } from './SlideDeckEditor';
+import { useSlideSocket, GenerationStatus } from '@/hooks/use-slide-socket';
 import {
   Presentation,
   Plus,
   Sparkles,
   Trash2,
-  ArrowRight,
   Clock,
   FileText,
+  Loader2,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
 
 interface SlideDecksViewProps {
@@ -27,6 +30,25 @@ export function SlideDecksView({ courseId }: SlideDecksViewProps) {
   const [loading, setLoading] = useState(true);
   const [showGenerator, setShowGenerator] = useState(false);
   const [activeDeckId, setActiveDeckId] = useState<string | null>(null);
+  const [activeJobId, setActiveJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<GenerationStatus | null>(null);
+
+  const handleStatus = useCallback((status: GenerationStatus) => {
+    setJobStatus(status);
+    if (status.status === 'complete' && status.deckId) {
+      setActiveDeckId(status.deckId);
+      setActiveJobId(null);
+      setJobStatus(null);
+    } else if (status.status === 'error') {
+      setTimeout(() => {
+        setActiveJobId(null);
+        setJobStatus(null);
+        fetchDecks();
+      }, 3000);
+    }
+  }, []);
+
+  useSlideSocket(activeJobId, handleStatus);
 
   const fetchDecks = useCallback(async () => {
     try {
@@ -43,9 +65,15 @@ export function SlideDecksView({ courseId }: SlideDecksViewProps) {
     fetchDecks();
   }, [fetchDecks]);
 
-  const handleGenerated = () => {
+  const handleJobSubmitted = (jobId: string) => {
     setShowGenerator(false);
-    fetchDecks();
+    setActiveJobId(jobId);
+    setJobStatus({
+      jobId,
+      status: 'queued',
+      message: 'Job queued...',
+      progress: 0,
+    });
   };
 
   const handleDelete = async (deckId: string) => {
@@ -73,7 +101,7 @@ export function SlideDecksView({ courseId }: SlideDecksViewProps) {
       <div className="max-w-2xl mx-auto">
         <SlideDeckGenerator
           courseId={courseId}
-          onGenerated={handleGenerated}
+          onJobSubmitted={handleJobSubmitted}
           onCancel={() => setShowGenerator(false)}
         />
       </div>
@@ -88,8 +116,50 @@ export function SlideDecksView({ courseId }: SlideDecksViewProps) {
     );
   }
 
+  const statusIcons: Record<string, React.ReactNode> = {
+    queued: <Loader2 className="h-5 w-5 animate-spin text-gray-400" />,
+    generating: <Loader2 className="h-5 w-5 animate-spin text-indigo-500" />,
+    processing: <Loader2 className="h-5 w-5 animate-spin text-amber-500" />,
+    complete: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+    error: <XCircle className="h-5 w-5 text-red-500" />,
+  };
+
+  const statusColors: Record<string, string> = {
+    queued: 'bg-gray-50 border-gray-200',
+    generating: 'bg-indigo-50 border-indigo-200',
+    processing: 'bg-amber-50 border-amber-200',
+    complete: 'bg-green-50 border-green-200',
+    error: 'bg-red-50 border-red-200',
+  };
+
+  const progressBarColors: Record<string, string> = {
+    queued: 'bg-gray-400',
+    generating: 'bg-indigo-500',
+    processing: 'bg-amber-500',
+    complete: 'bg-green-500',
+    error: 'bg-red-500',
+  };
+
   return (
     <div className="space-y-6">
+      {jobStatus && (
+        <Card className={`border-2 ${statusColors[jobStatus.status]} transition-all`}>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              {statusIcons[jobStatus.status]}
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-gray-900">{jobStatus.message}</p>
+                <div className="w-full bg-gray-200 rounded-full h-1.5 mt-2">
+                  <div
+                    className={`h-1.5 rounded-full transition-all duration-500 ${progressBarColors[jobStatus.status]}`}
+                    style={{ width: `${jobStatus.progress || 0}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">Slide Decks</h3>

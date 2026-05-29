@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -112,30 +111,25 @@ export default function CourseDetailPage() {
 
   if (loading) {
     return (
-      <DashboardLayout>
-        <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
-        </div>
-      </DashboardLayout>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
+      </div>
     );
   }
 
   if (!course) {
     return (
-      <DashboardLayout>
-        <div className="text-center py-12">
-          <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
-          <h3 className="mt-4 text-lg font-medium text-gray-900">Course not found</h3>
-          <Link href="/admin/courses">
-            <Button className="mt-4">Back to Courses</Button>
-          </Link>
-        </div>
-      </DashboardLayout>
+      <div className="text-center py-12">
+        <BookOpen className="mx-auto h-12 w-12 text-gray-300" />
+        <h3 className="mt-4 text-lg font-medium text-gray-900">Course not found</h3>
+        <Link href="/admin/courses">
+          <Button className="mt-4">Back to Courses</Button>
+        </Link>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -339,7 +333,6 @@ export default function CourseDetailPage() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
   );
 }
 

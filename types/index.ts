@@ -402,7 +402,7 @@ export interface PerformanceAnalysisResponse {
 
 // Slide Deck
 export type SlideType = 'title' | 'agenda' | 'section' | 'content' | 'image' | 'comparison' | 'timeline' | 'chart' | 'table' | 'summary' | 'cta';
-export type ElementType = 'text' | 'image' | 'shape' | 'icon' | 'chart' | 'table';
+export type ElementType = 'text' | 'image' | 'shape' | 'icon' | 'chart' | 'table' | 'video' | 'audio' | 'url';
 export type FontWeight = 'normal' | 'medium' | 'bold';
 export type TextAlignment = 'left' | 'center' | 'right';
 export type BackgroundType = 'solid' | 'gradient' | 'image';

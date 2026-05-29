@@ -10,11 +10,11 @@ import { Sparkles, Settings2, Wand2 } from 'lucide-react';
 
 interface SlideDeckGeneratorProps {
   courseId: string;
-  onGenerated: () => void;
+  onJobSubmitted: (jobId: string) => void;
   onCancel: () => void;
 }
 
-export function SlideDeckGenerator({ courseId, onGenerated, onCancel }: SlideDeckGeneratorProps) {
+export function SlideDeckGenerator({ courseId, onJobSubmitted, onCancel }: SlideDeckGeneratorProps) {
   const [generating, setGenerating] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [form, setForm] = useState<GenerateSlideDeckRequest>({
@@ -33,11 +33,9 @@ export function SlideDeckGenerator({ courseId, onGenerated, onCancel }: SlideDec
     if (!form.topic.trim()) return;
     setGenerating(true);
     try {
-      await api.post(`/courses/${courseId}/slides/generate`, form);
-      onGenerated();
+      const result = await api.post<{ jobId: string }>(`/courses/${courseId}/slides/generate`, form);
+      onJobSubmitted(result.jobId);
     } catch {
-      // Toast handled by api client
-    } finally {
       setGenerating(false);
     }
   };
@@ -152,7 +150,7 @@ export function SlideDeckGenerator({ courseId, onGenerated, onCancel }: SlideDec
             className="flex-1 h-12 bg-indigo-600 hover:bg-indigo-700"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            {generating ? 'Generating...' : 'Generate Deck'}
+            {generating ? 'Starting...' : 'Generate Deck'}
           </Button>
           <Button variant="outline" onClick={onCancel} className="h-12">
             Cancel

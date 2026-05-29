@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,8 +40,7 @@ export default function CreateUserPage() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto">
         <div className="mb-6">
           <Link 
             href="/admin/users" 
@@ -149,6 +147,5 @@ export default function CreateUserPage() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }

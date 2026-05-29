@@ -1,5 +1,4 @@
 import { Metadata } from 'next';
-import { DashboardLayout } from '@/components/layout/dashboard-layout';
 import { api } from '@/lib/api';
 import { User } from '@/types';
 import { ArrowLeft } from 'lucide-react';
@@ -34,8 +33,7 @@ export default async function EditUserPage({ params }: PageProps) {
   }
 
   return (
-    <DashboardLayout>
-      <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div className="max-w-2xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex items-center gap-4">
           <Link 
             href="/admin/users" 
@@ -51,6 +49,5 @@ export default async function EditUserPage({ params }: PageProps) {
 
         <UserEditForm user={user} />
       </div>
-    </DashboardLayout>
   );
 }

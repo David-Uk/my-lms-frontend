@@ -5,8 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
-import { SlideDeck, Slide } from '@/types';
+import { SlideDeck, Slide, SlideElement, SlideType, ElementType } from '@/types';
 import { SlidePreview } from './SlidePreview';
+import { AddSlideDialog } from './AddSlideDialog';
+import { ElementEditor } from './ElementEditor';
 import {
   ArrowLeft,
   Plus,
@@ -17,7 +19,7 @@ import {
   Download,
   FileDown,
   Edit3,
-  Eye,
+  Pencil,
 } from 'lucide-react';
 
 interface SlideDeckEditorProps {
@@ -32,6 +34,9 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
   const [selectedSlideIndex, setSelectedSlideIndex] = useState(0);
   const [editingSlideIndex, setEditingSlideIndex] = useState<number | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [editingElement, setEditingElement] = useState<SlideElement | null>(null);
+  const [showElementEditor, setShowElementEditor] = useState(false);
 
   const fetchDeck = useCallback(async () => {
     try {
@@ -59,6 +64,7 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
 
   const removeSlide = async (slideId: string) => {
     try {
+      if (!confirm('Delete this slide?')) return;
       const updated = await api.del<SlideDeck>(`/courses/${courseId}/slides/${deckId}/slides/${slideId}`);
       setDeck(updated);
       setSelectedSlideIndex(Math.max(0, selectedSlideIndex - 1));
@@ -76,32 +82,65 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
     }
   };
 
-  const addSlide = async () => {
-    const newSlide: Partial<Slide> = {
-      type: 'content',
-      title: 'New Slide',
-      layout: 'two-column',
-      background: { type: 'solid', value: '#ffffff' },
-      elements: [
-        {
-          id: `elem-new-${Date.now()}`,
-          type: 'text',
-          position: { x: 100, y: 80 },
-          size: { width: 760, height: 50 },
-          content: 'New Slide',
-          style: { font_family: 'Inter', font_size: 32, font_weight: 'bold', color: '#1e293b', alignment: 'left' },
-          editable: true,
-        },
-      ],
-      speaker_notes: '',
-      image_suggestions: [],
-    };
-    try {
-      const updated = await api.post<SlideDeck>(`/courses/${courseId}/slides/${deckId}/slides`, { slide: newSlide });
-      setDeck(updated);
-    } catch {
-      // handled by api client
+  const handleAddSlides = async (type: SlideType, title: string, count: number) => {
+    setShowAddDialog(false);
+    const baseTitle = title || `New ${type} slide`;
+    for (let i = 0; i < count; i++) {
+      const numberedTitle = count > 1 ? `${baseTitle} ${i + 1}` : baseTitle;
+      const newSlide: Partial<Slide> = {
+        type,
+        title: numberedTitle,
+        layout: type === 'title' || type === 'cta' || type === 'summary' ? 'centered' : 'two-column',
+        background: { type: 'solid', value: '#ffffff' },
+        elements: [
+          {
+            id: `elem-${Date.now()}-${i}`,
+            type: 'text',
+            position: { x: 100, y: 80 },
+            size: { width: 760, height: 50 },
+            content: numberedTitle,
+            style: { font_family: 'Inter', font_size: 32, font_weight: 'bold', color: '#1e293b', alignment: 'left' },
+            editable: true,
+          },
+        ],
+        speaker_notes: '',
+        image_suggestions: [],
+      };
+      try {
+        await api.post<SlideDeck>(`/courses/${courseId}/slides/${deckId}/slides`, { slide: newSlide });
+      } catch {
+        // handled by api client
+      }
     }
+    fetchDeck();
+  };
+
+  const addElement = async (element: SlideElement) => {
+    if (!deck) return;
+    const slide = deck.slides[selectedSlideIndex];
+    const updatedElements = [...slide.elements, element];
+    setShowElementEditor(false);
+    setEditingElement(null);
+    await updateSlide(slide.id, { elements: updatedElements });
+  };
+
+  const updateElement = async (element: SlideElement) => {
+    if (!deck) return;
+    const slide = deck.slides[selectedSlideIndex];
+    const updatedElements = slide.elements.map((e) =>
+      e.id === element.id ? element : e,
+    );
+    setShowElementEditor(false);
+    setEditingElement(null);
+    await updateSlide(slide.id, { elements: updatedElements });
+  };
+
+  const removeElement = async (elementId: string) => {
+    if (!deck) return;
+    if (!confirm('Delete this element?')) return;
+    const slide = deck.slides[selectedSlideIndex];
+    const updatedElements = slide.elements.filter((e) => e.id !== elementId);
+    await updateSlide(slide.id, { elements: updatedElements });
   };
 
   const startEditing = (index: number) => {
@@ -144,7 +183,7 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
     }
   };
 
-  const handleExport = async () => {
+  const handleExportJson = async () => {
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/courses/${courseId}/slides/${deckId}`,
@@ -158,6 +197,52 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
       a.download = `${deck?.title || 'presentation'}.json`;
       a.click();
       URL.revokeObjectURL(url);
+    } catch {
+      // handled by api client
+    }
+  };
+
+  const handleExportPptx = async () => {
+    try {
+      const PptxGenJS = (await import('pptxgenjs')).default;
+      const pptx = new PptxGenJS();
+
+      const slideDeck = await api.get<SlideDeck>(`/courses/${courseId}/slides/${deckId}`);
+      pptx.title = slideDeck.title;
+      pptx.author = 'LMS';
+      pptx.subject = slideDeck.topic || '';
+
+      for (const slide of slideDeck.slides) {
+        const pptSlide = pptx.addSlide();
+
+        if (slide.background?.type === 'gradient') {
+          pptSlide.background = { color: slide.background.value.includes('#') ? slide.background.value : 'FFFFFF' };
+        } else if (slide.background?.type === 'solid') {
+          pptSlide.background = { color: slide.background.value?.replace('#', '') || 'FFFFFF' };
+        }
+
+        for (const elem of slide.elements) {
+          if (elem.type === 'text') {
+            const x = (elem.position.x / 960) * 10;
+            const y = (elem.position.y / 540) * 7.5;
+            const w = (elem.size.width / 960) * 10;
+            const h = (elem.size.height / 540) * 7.5;
+            const fontSize = Math.max(8, Math.min(48, Math.round((elem.style?.font_size || 18) * 0.75)));
+
+            pptSlide.addText(elem.content as string, {
+              x, y, w, h, fontSize,
+              fontFace: elem.style?.font_family || 'Arial',
+              color: elem.style?.color || '363636',
+              bold: elem.style?.font_weight === 'bold',
+              align: (elem.style?.alignment as 'left' | 'center' | 'right') || 'left',
+              valign: 'middle',
+              margin: [4, 8, 4, 8],
+            });
+          }
+        }
+      }
+
+      await pptx.writeFile({ fileName: `${slideDeck.title || 'presentation'}.pptx` });
     } catch {
       // handled by api client
     }
@@ -183,8 +268,27 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
   const slides = deck.slides || [];
   const currentSlide = slides[selectedSlideIndex];
 
+  const elementTypeIcon: Record<string, string> = {
+    text: 'T', image: '🖼', video: '▶', audio: '♪', url: '🔗',
+    shape: '◇', icon: '★', chart: '▤', table: '⊞',
+  };
+
   return (
     <div className="space-y-6">
+      {showAddDialog && (
+        <AddSlideDialog
+          onAdd={handleAddSlides}
+          onClose={() => setShowAddDialog(false)}
+        />
+      )}
+      {showElementEditor && (
+        <ElementEditor
+          element={editingElement}
+          onSave={editingElement ? updateElement : addElement}
+          onClose={() => { setShowElementEditor(false); setEditingElement(null); }}
+        />
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={onBack}>
@@ -200,7 +304,11 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}>
+          <Button variant="outline" size="sm" onClick={handleExportPptx}>
+            <FileDown className="h-4 w-4 mr-1" />
+            Download PPTX
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportJson}>
             <Download className="h-4 w-4 mr-1" />
             Export JSON
           </Button>
@@ -208,10 +316,11 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
       </div>
 
       <div className="grid grid-cols-12 gap-6">
+        {/* Left: slide list */}
         <div className="col-span-4 space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold text-gray-700">Slides</h3>
-            <Button size="sm" variant="ghost" onClick={addSlide}>
+            <Button size="sm" variant="ghost" onClick={() => setShowAddDialog(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Add
             </Button>
@@ -270,6 +379,7 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
           </div>
         </div>
 
+        {/* Right: slide preview + details */}
         <div className="col-span-8 space-y-4">
           {currentSlide && (
             <>
@@ -291,8 +401,12 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
                       <label className="text-xs font-medium text-gray-500">Title</label>
                       <input
                         className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium text-gray-900 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                        value={currentSlide.title}
-                        onChange={(e) => updateSlide(currentSlide.id, { title: e.target.value })}
+                        defaultValue={currentSlide.title}
+                        onBlur={(e) => {
+                          if (e.target.value !== currentSlide.title) {
+                            updateSlide(currentSlide.id, { title: e.target.value });
+                          }
+                        }}
                       />
                     </div>
                   </div>
@@ -302,8 +416,12 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
                     <textarea
                       className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-700 focus:border-indigo-300 focus:outline-none focus:ring-1 focus:ring-indigo-300"
                       rows={3}
-                      value={currentSlide.speaker_notes}
-                      onChange={(e) => updateSlide(currentSlide.id, { speaker_notes: e.target.value })}
+                      defaultValue={currentSlide.speaker_notes}
+                      onBlur={(e) => {
+                        if (e.target.value !== currentSlide.speaker_notes) {
+                          updateSlide(currentSlide.id, { speaker_notes: e.target.value });
+                        }
+                      }}
                     />
                   </div>
 
@@ -336,20 +454,57 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
                     )}
                   </div>
 
+                  {/* Elements section */}
                   <div>
-                    <label className="text-xs font-medium text-gray-500">Elements ({currentSlide.elements.length})</label>
-                    <div className="mt-1 space-y-1">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium text-gray-500">
+                        Elements ({currentSlide.elements.length})
+                      </label>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setEditingElement(null); setShowElementEditor(true); }}
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Add Element
+                      </Button>
+                    </div>
+                    <div className="space-y-1">
                       {currentSlide.elements.map((elem) => (
-                        <div key={elem.id} className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-600">
+                        <div
+                          key={elem.id}
+                          className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg text-xs text-gray-600 group/elem"
+                        >
+                          <span className="text-sm">{elementTypeIcon[elem.type] || '?'}</span>
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">{elem.type}</Badge>
-                          <span className="truncate">
+                          <span className="truncate flex-1">
                             {typeof elem.content === 'string'
                               ? elem.content.substring(0, 40)
                               : `[${elem.type} data]`
                             }
                           </span>
+                          <span className="text-gray-400 text-[10px]">
+                            {elem.position.x},{elem.position.y} · {elem.size.width}×{elem.size.height}
+                          </span>
+                          <div className="hidden group-hover/elem:flex items-center gap-1">
+                            <button
+                              onClick={() => { setEditingElement(elem); setShowElementEditor(true); }}
+                              className="p-1 hover:bg-gray-200 rounded"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => removeElement(elem.id)}
+                              className="p-1 hover:bg-red-100 rounded text-red-500"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </div>
                         </div>
                       ))}
+                      {currentSlide.elements.length === 0 && (
+                        <p className="text-xs text-gray-400 italic py-2">No elements yet. Click &quot;Add Element&quot; to add content.</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>
