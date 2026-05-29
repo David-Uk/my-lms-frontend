@@ -94,9 +94,11 @@ export function TutorCourseList({ initialCourses, search: initialSearch }: { ini
                       Configure
                     </Button>
                   </Link>
-                  <Button variant="outline" size="icon" className="h-14 w-14 rounded-2xl border-gray-100 hover:bg-blue-50 hover:text-blue-600 transition-all">
-                    <ArrowUpRight className="h-5 w-5" />
-                  </Button>
+                  <Link href={`/tutor/courses/${course.id}/slides`}>
+                    <Button variant="outline" size="icon" className="h-14 w-14 rounded-2xl border-gray-100 hover:bg-blue-50 hover:text-blue-600 transition-all" title="Slide Decks">
+                      <ArrowUpRight className="h-5 w-5" />
+                    </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>

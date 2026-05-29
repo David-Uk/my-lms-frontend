@@ -22,7 +22,8 @@ import {
   ChevronRight,
   ChevronDown,
   Edit2,
-  MoreVertical
+  MoreVertical,
+  Presentation
 } from 'lucide-react';
 import type { Course, CourseContent, ContentType } from '@/types';
 
@@ -215,21 +216,40 @@ export default function CourseDetailPage() {
             {[
               { id: 'details', label: 'Course Details', icon: BookOpen },
               { id: 'content', label: 'Content Tree', icon: Folder },
+              { id: 'slides', label: 'Slides', icon: Presentation, href: `/admin/courses/${courseId}/slides` },
               { id: 'enrollments', label: 'Enrollments', icon: Users },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
+            ].map((tab) => {
+              if (tab.href) {
+                return (
+                  <Link
+                    key={tab.id}
+                    href={tab.href}
+                    className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                      false
+                        ? 'border-blue-600 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    <tab.icon className="h-4 w-4" />
+                    {tab.label}
+                  </Link>
+                );
+              }
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
+                  className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                    activeTab === tab.id
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  <tab.icon className="h-4 w-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
         </div>
 

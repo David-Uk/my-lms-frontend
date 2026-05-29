@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import type { Course, PaginatedResponse, DifficultyLevel } from '@/types';
-import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, Users, Layout } from 'lucide-react';
+import { Search, Pencil, Trash2, ChevronLeft, ChevronRight, BookOpen, Users, Layout, Presentation } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 interface CourseTableProps {
@@ -149,6 +149,11 @@ export function CourseTable({ initialData, search: initialSearch, difficulty: in
                   </td>
                   <td className="py-5 px-6">
                     <div className="flex justify-end gap-1.5">
+                      <Link href={`/admin/courses/${course.id}/slides`}>
+                        <Button variant="ghost" size="icon" title="Slide Decks" className="h-9 w-9 rounded-xl hover:bg-purple-50 hover:text-purple-600 text-gray-400">
+                          <Presentation className="h-4.5 w-4.5" />
+                        </Button>
+                      </Link>
                       <Link href={`/admin/courses/${course.id}/content`}>
                         <Button variant="ghost" size="icon" title="Manage Content" className="h-9 w-9 rounded-xl hover:bg-indigo-50 hover:text-indigo-600 text-gray-400">
                           <Layout className="h-4.5 w-4.5" />

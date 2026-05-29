@@ -400,6 +400,138 @@ export interface PerformanceAnalysisResponse {
   rawData: Record<string, unknown>;
 }
 
+// Slide Deck
+export type SlideType = 'title' | 'agenda' | 'section' | 'content' | 'image' | 'comparison' | 'timeline' | 'chart' | 'table' | 'summary' | 'cta';
+export type ElementType = 'text' | 'image' | 'shape' | 'icon' | 'chart' | 'table';
+export type FontWeight = 'normal' | 'medium' | 'bold';
+export type TextAlignment = 'left' | 'center' | 'right';
+export type BackgroundType = 'solid' | 'gradient' | 'image';
+export type SlideSize = '16:9' | '4:3';
+
+export interface SlideTheme {
+  name: string;
+  colors: {
+    primary: string;
+    secondary: string;
+    accent: string;
+    background: string;
+    text: string;
+  };
+  fonts: {
+    heading: string;
+    body: string;
+  };
+}
+
+export interface SlideSettings {
+  slide_size: string;
+  export_formats: string[];
+  editable: boolean;
+}
+
+export interface SlideElementStyle {
+  font_family: string;
+  font_size: number;
+  font_weight: FontWeight;
+  color: string;
+  alignment: TextAlignment;
+}
+
+export interface SlideElement {
+  id: string;
+  type: ElementType;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  content: string | object | unknown[];
+  style: SlideElementStyle;
+  editable: boolean;
+}
+
+export interface ImageSuggestion {
+  description: string;
+  preferred_source: 'uploaded' | 'generated' | 'stock';
+  placement: string;
+}
+
+export interface Slide {
+  id: string;
+  slide_number: number;
+  type: SlideType;
+  title: string;
+  layout: string;
+  background: { type: BackgroundType; value: string };
+  elements: SlideElement[];
+  speaker_notes: string;
+  image_suggestions: ImageSuggestion[];
+}
+
+export interface SlideDeck {
+  id: string;
+  courseId: string;
+  createdBy: string;
+  title: string;
+  topic: string | null;
+  templateId: string;
+  theme: SlideTheme;
+  settings: SlideSettings;
+  slides: Slide[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SlideDeckListItem {
+  id: string;
+  courseId: string;
+  title: string;
+  topic: string | null;
+  templateId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GenerateSlideDeckRequest {
+  topic: string;
+  audience?: string;
+  tone?: string;
+  numberOfSlides?: number;
+  templateId?: string;
+  stylePreferences?: string;
+  brandColors?: string;
+  fontPreferences?: string;
+  language?: string;
+  additionalInstructions?: string;
+}
+
+export interface CreateSlideDeckRequest {
+  title: string;
+  topic?: string;
+  templateId?: string;
+  theme?: Partial<SlideTheme>;
+  settings?: Partial<SlideSettings>;
+  slides?: Slide[];
+}
+
+export interface UpdateSlideDeckRequest {
+  title?: string;
+  topic?: string;
+  templateId?: string;
+  theme?: Partial<SlideTheme>;
+  settings?: Partial<SlideSettings>;
+  slides?: Slide[];
+}
+
+export interface UpdateSlideRequest {
+  data: Partial<Slide>;
+}
+
+export interface AddSlideRequest {
+  slide: Partial<Slide>;
+}
+
+export interface ReorderSlidesRequest {
+  slideIds: string[];
+}
+
 // API Error
 export interface ApiError {
   status: number;
