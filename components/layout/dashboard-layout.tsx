@@ -2,29 +2,40 @@
 
 import { cn } from '@/utils/cn';
 import { useAuth } from '@/stores/auth-store';
-import { useSidebarStore } from '@/stores/sidebar-store';
 import { Sidebar } from './sidebar';
 import { Header } from './header';
+import { Loader2 } from 'lucide-react';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user, isLoading } = useAuth();
-  const { isCollapsed } = useSidebarStore();
+  const { isLoading } = useAuth();
+  const sidebarWidth = 84;
+  const sidebarCollapsedWidth = 72;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[var(--background)]">
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--link-color)]" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {!isLoading && <Sidebar />}
+    <div className="min-h-screen bg-[var(--background)]">
+      <Sidebar />
       <div
-        className={cn(
-          'transition-all duration-300',
-          isLoading ? '' : isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
-        )}
+        className="transition-all duration-200"
+        style={{
+          marginLeft: `${sidebarWidth}px`,
+        }}
       >
         <Header />
-        <main className="p-4 sm:p-6 lg:p-8">{children}</main>
+        <main className="p-6">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -634,7 +634,7 @@ export default function AIFeaturesPage() {
                           <div className="p-6 space-y-4">
                             <div>
                               <div className="flex justify-between items-start">
-                                <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-50 font-bold border border-blue-100">
+                                <Badge variant="info" className="bg-blue-50 text-blue-700 hover:bg-blue-50 font-bold border border-blue-100">
                                   {quiz.questions?.length || 0} Questions
                                 </Badge>
                                 {quiz.startDateTime && (
@@ -1409,7 +1409,7 @@ export default function AIFeaturesPage() {
                                       </td>
                                       <td className="px-6 py-4">
                                         <Badge
-                                          variant="secondary"
+                                          variant="neutral"
                                           className={`font-bold ${
                                             p.status === 'completed'
                                               ? 'bg-green-50 text-green-700 border border-green-200'
@@ -1434,7 +1434,7 @@ export default function AIFeaturesPage() {
                                       <td className="px-6 py-4">
                                         <div className="flex flex-col gap-1">
                                           {p.terminatedByTabSwitch && (
-                                            <Badge variant="destructive" className="font-extrabold w-fit flex items-center gap-1 text-[10px] px-2 py-0.5 bg-red-600 text-white rounded-md">
+                                            <Badge variant="danger" className="font-extrabold w-fit flex items-center gap-1 text-[10px] px-2 py-0.5 bg-red-600 text-white rounded-md">
                                               <ShieldAlert className="h-3 w-3" /> Terminated (Cheat)
                                             </Badge>
                                           )}

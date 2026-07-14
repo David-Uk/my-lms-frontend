@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Users, BookOpen, GraduationCap, Award, ArrowRight, Sparkles, TrendingUp, Activity } from 'lucide-react';
+import { Users, BookOpen, GraduationCap, Activity, ArrowRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/dashboard/stat-card';
 import { api } from '@/lib/api';
@@ -42,13 +42,11 @@ export default function AdminDashboardPage() {
           ? (coursesRes.value.total || coursesRes.value.meta?.total || 0)
           : 0;
 
-        // Fetch learner count
         const learnersRes = await api.get<PaginatedResponse<User>>('/users?page=1&limit=1&role=learner').catch(() => null);
         const totalLearners = learnersRes
           ? (learnersRes.total || learnersRes.meta?.total || 0)
           : 0;
 
-        // Fetch tutor count
         const tutorsRes = await api.get<PaginatedResponse<User>>('/users?page=1&limit=1&role=tutor').catch(() => null);
         const totalTutors = tutorsRes
           ? (tutorsRes.total || tutorsRes.meta?.total || 0)
@@ -59,7 +57,7 @@ export default function AdminDashboardPage() {
           totalCourses,
           totalLearners,
           totalTutors,
-          activeUsers: totalUsers, // all fetched users are in the system
+          activeUsers: totalUsers,
         });
       } catch (error) {
         console.error('Failed to fetch dashboard stats:', error);
@@ -77,182 +75,166 @@ export default function AdminDashboardPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">System Overview</h1>
-            <p className="text-gray-500 font-medium mt-1">Welcome back. Here is what&apos;s happening across the platform.</p>
-          </div>
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">System Live</span>
-          </div>
-        </div>
-        
-        {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Users"
-            value={loading ? '—' : formatNumber(stats.totalUsers)}
-            description="Active accounts"
-            color="blue"
-            icon={<Users className="h-6 w-6" />}
-            loading={loading}
-            variant="gradient"
-          />
-          <StatCard
-            title="Courses"
-            value={loading ? '—' : formatNumber(stats.totalCourses)}
-            description="Active catalogs"
-            color="indigo"
-            icon={<BookOpen className="h-6 w-6" />}
-            loading={loading}
-            variant="gradient"
-          />
-          <StatCard
-            title="Learners"
-            value={loading ? '—' : formatNumber(stats.totalLearners)}
-            description="Enrolled students"
-            color="emerald"
-            icon={<GraduationCap className="h-6 w-6" />}
-            loading={loading}
-            variant="gradient"
-          />
-          <StatCard
-            title="Tutors"
-            value={loading ? '—' : formatNumber(stats.totalTutors)}
-            description="Instructors"
-            color="orange"
-            icon={<Activity className="h-6 w-6" />}
-            loading={loading}
-            variant="gradient"
-          />
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">System Overview</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Welcome back. Here&apos;s the platform status.</p>
+      </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Quick Actions */}
-          <Card className="lg:col-span-2 border-none shadow-2xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 p-8">
-              <div className="flex items-center gap-3">
-                <Sparkles className="h-5 w-5 text-blue-500" />
-                <CardTitle className="text-xl font-black">Intelligent Actions</CardTitle>
-              </div>
-              <CardDescription className="font-medium">Streamline your administrative workflow</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8">
-              <div className="grid sm:grid-cols-2 gap-4">
-                <QuickActionLink
-                  href="/admin/users/create"
-                  title="Onboard User"
-                  description="Add new staff or students"
-                  icon={<Users className="h-5 w-5" />}
-                  color="blue"
-                />
-                <QuickActionLink
-                  href="/admin/courses/create"
-                  title="Launch Course"
-                  description="Create new learning path"
-                  icon={<BookOpen className="h-5 w-5" />}
-                  color="indigo"
-                />
-                <QuickActionLink
-                  href="/admin/ai-performance"
-                  title="AI Insights"
-                  description="Run predictive analytics"
-                  icon={<Award className="h-5 w-5" />}
-                  color="purple"
-                />
-                <QuickActionLink
-                  href="/admin/courses"
-                  title="Manage Content"
-                  description="Edit existing curriculum"
-                  icon={<Activity className="h-5 w-5" />}
-                  color="emerald"
-                />
-              </div>
-            </CardContent>
-          </Card>
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Users"
+          value={loading ? '—' : formatNumber(stats.totalUsers)}
+          description="Active accounts"
+          color="blue"
+          icon={<Users className="h-5 w-5" />}
+          loading={loading}
+        />
+        <StatCard
+          title="Courses"
+          value={loading ? '—' : formatNumber(stats.totalCourses)}
+          description="Active catalogs"
+          color="emerald"
+          icon={<BookOpen className="h-5 w-5" />}
+          loading={loading}
+        />
+        <StatCard
+          title="Learners"
+          value={loading ? '—' : formatNumber(stats.totalLearners)}
+          description="Enrolled students"
+          color="purple"
+          icon={<GraduationCap className="h-5 w-5" />}
+          loading={loading}
+        />
+        <StatCard
+          title="Tutors"
+          value={loading ? '—' : formatNumber(stats.totalTutors)}
+          description="Instructors"
+          color="orange"
+          icon={<Activity className="h-5 w-5" />}
+          loading={loading}
+        />
+      </div>
 
-          {/* Platform Summary */}
-          <Card className="border-none shadow-xl shadow-gray-200/40 rounded-[2.5rem] bg-gray-900 text-white">
-            <CardHeader className="p-8">
-              <CardTitle className="text-xl font-black flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-blue-400" />
-                Platform Health
-              </CardTitle>
-              <CardDescription className="text-gray-400 font-medium">Real-time system metrics</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 pt-0">
-              <div className="space-y-6">
-                <TrendItem
-                  label="Users"
-                  val={stats.totalUsers}
-                  maxVal={Math.max(stats.totalUsers, 1)}
-                  color="bg-blue-500"
-                  loading={loading}
-                />
-                <TrendItem
-                  label="Courses"
-                  val={stats.totalCourses}
-                  maxVal={Math.max(stats.totalUsers, 1)}
-                  color="bg-emerald-500"
-                  loading={loading}
-                />
-                <TrendItem
-                  label="Learners"
-                  val={stats.totalLearners}
-                  maxVal={Math.max(stats.totalUsers, 1)}
-                  color="bg-purple-500"
-                  loading={loading}
-                />
-                <div className="pt-4">
-                  <Link href="/admin/users">
-                    <Button variant="outline" className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 hover:text-white rounded-2xl h-12">
-                      View All Users
-                    </Button>
-                  </Link>
-                </div>
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Quick Actions */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-gray-400" />
+              <CardTitle>Quick Actions</CardTitle>
+            </div>
+            <CardDescription>Streamline your administrative workflow</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid sm:grid-cols-2 gap-3">
+              <QuickActionLink
+                href="/admin/users/create"
+                title="Add User"
+                description="Onboard new staff or students"
+                color="blue"
+              />
+              <QuickActionLink
+                href="/admin/courses/create"
+                title="New Course"
+                description="Create a new learning path"
+                color="indigo"
+              />
+              <QuickActionLink
+                href="/admin/ai-performance"
+                title="AI Insights"
+                description="View predictive analytics"
+                color="purple"
+              />
+              <QuickActionLink
+                href="/admin/courses"
+                title="Manage Content"
+                description="Edit existing curriculum"
+                color="emerald"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Platform Summary */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Platform Health</CardTitle>
+            <CardDescription>System metrics overview</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <TrendItem
+                label="Users"
+                value={stats.totalUsers}
+                maxValue={Math.max(stats.totalUsers, 1)}
+                loading={loading}
+              />
+              <TrendItem
+                label="Courses"
+                value={stats.totalCourses}
+                maxValue={Math.max(stats.totalUsers, 1)}
+                loading={loading}
+              />
+              <TrendItem
+                label="Learners"
+                value={stats.totalLearners}
+                maxValue={Math.max(stats.totalUsers, 1)}
+                loading={loading}
+              />
+              <div className="pt-2">
+                <Link href="/admin/users">
+                  <Button variant="outline" className="w-full">
+                    View All Users
+                  </Button>
+                </Link>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
 
-// QuickActionLink and TrendItem are kept as local helpers for now
-function QuickActionLink({ href, title, description, icon, color }: any) {
-  const colors: any = {
-    blue: 'bg-blue-50 text-blue-600 group-hover:bg-blue-600',
-    indigo: 'bg-indigo-50 text-indigo-600 group-hover:bg-indigo-600',
-    purple: 'bg-purple-50 text-purple-600 group-hover:bg-purple-600',
-    emerald: 'bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600',
+function QuickActionLink({ href, title, description, color }: { href: string; title: string; description: string; color: string }) {
+  const colors: Record<string, string> = {
+    blue: 'bg-blue-50 text-blue-600 hover:bg-blue-100',
+    indigo: 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100',
+    purple: 'bg-purple-50 text-purple-600 hover:bg-purple-100',
+    emerald: 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100',
   };
 
   return (
-    <Link href={href} className="group flex items-center gap-4 p-4 rounded-3xl border border-gray-100 hover:border-transparent hover:shadow-xl hover:shadow-gray-200/50 transition-all duration-300">
-      <div className={`p-4 rounded-2xl transition-colors duration-300 ${colors[color]} group-hover:text-white`}>
-        {icon}
+    <Link
+      href={href}
+      className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 transition-colors group"
+    >
+      <div className={`p-2 rounded-lg ${colors[color]} transition-colors`}>
+        <ArrowRight className="h-4 w-4" />
       </div>
-      <div className="flex-1">
-        <h4 className="font-bold text-gray-900">{title}</h4>
-        <p className="text-xs text-gray-500 font-medium">{description}</p>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-gray-900">{title}</p>
+        <p className="text-xs text-gray-500 truncate">{description}</p>
       </div>
-      <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
     </Link>
   );
 }
 
-function TrendItem({ label, val, maxVal, color, loading }: any) {
-  const percentage = maxVal > 0 ? Math.round((val / maxVal) * 100) : 0;
+function TrendItem({ label, value, maxValue, loading }: { label: string; value: number; maxValue: number; loading: boolean }) {
+  const percentage = maxValue > 0 ? Math.round((value / maxValue) * 100) : 0;
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-gray-500">
-        <span>{label}</span>
-        <span className="text-white">{loading ? '...' : val}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between text-xs">
+        <span className="font-medium text-gray-600">{label}</span>
+        <span className="text-gray-900 font-medium">{loading ? '...' : value}</span>
       </div>
-      <div className="h-1.5 w-full bg-gray-800 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-1000`} style={{ width: loading ? '0%' : `${Math.max(percentage, 5)}%` }} />
+      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000"
+          style={{ width: loading ? '0%' : `${Math.max(percentage, 3)}%` }}
+        />
       </div>
     </div>
   );

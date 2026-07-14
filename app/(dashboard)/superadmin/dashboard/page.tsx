@@ -199,7 +199,7 @@ export default function SuperAdminDashboardPage() {
 
   const getRoleBadge = (role: string) => {
     const roleConfig: Record<string, { bg: string; icon: React.ReactNode; label: string }> = {
-      superadmin: { bg: 'bg-[#004D20] text-white', icon: <Crown className="h-3 w-3 mr-1" />, label: 'Super Admin' },
+      superadmin: { bg: 'bg-[var(--brand-primary)] text-white', icon: <Crown className="h-3 w-3 mr-1" />, label: 'Super Admin' },
       admin: { bg: 'bg-purple-100 text-purple-800', icon: <Shield className="h-3 w-3 mr-1" />, label: 'Admin' },
       tutor: { bg: 'bg-emerald-100 text-emerald-800', icon: <BookOpen className="h-3 w-3 mr-1" />, label: 'Tutor' },
       learner: { bg: 'bg-blue-100 text-blue-800', icon: <GraduationCap className="h-3 w-3 mr-1" />, label: 'Learner' },
@@ -217,8 +217,8 @@ export default function SuperAdminDashboardPage() {
     <div className="space-y-10 animate-in fade-in slide-in-from-top-4 duration-1000">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="p-4 bg-[#004D20]/10 rounded-3xl shadow-lg">
-              <Crown className="h-8 w-8 text-[#004D20]" />
+            <div className="p-4 bg-[var(--brand-primary)]/10 rounded-3xl shadow-lg">
+              <Crown className="h-8 w-8 text-[var(--brand-primary)]" />
             </div>
             <div>
               <h1 className="text-4xl font-black text-gray-900 tracking-tight">System Dashboard</h1>
@@ -237,7 +237,7 @@ export default function SuperAdminDashboardPage() {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-4 py-2 font-bold text-sm rounded-full transition-colors capitalize ${
-                activeTab === tab ? 'bg-[#004D20] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'
+                activeTab === tab ? 'bg-[var(--brand-primary)] text-white shadow-md' : 'text-gray-500 hover:bg-gray-100'
               }`}
             >
               {tab === 'overview' ? 'Overview & AI' : tab === 'users' ? 'User Management' : 'Traffic Analytics'}
@@ -280,18 +280,18 @@ export default function SuperAdminDashboardPage() {
               <StatCard title="Total Users" value={loading ? '—' : stats.totalUsers} description="System-wide accounts" icon={<Users className="h-5 w-5 text-blue-600" />} color="blue" />
               <StatCard title="Total Learners" value={loading ? '—' : stats.totalLearners} description="Registered students" icon={<GraduationCap className="h-5 w-5 text-emerald-600" />} color="emerald" />
               <StatCard title="Total Tutors" value={loading ? '—' : stats.totalTutors} description="Instructors" icon={<BookOpen className="h-5 w-5 text-purple-600" />} color="purple" />
-              <StatCard title="Active Learners" value={loading ? '—' : stats.activeLearners} description="Currently engaged" icon={<Sparkles className="h-5 w-5 text-[#004D20]" />} color="green" />
+              <StatCard title="Active Learners" value={loading ? '—' : stats.activeLearners} description="Currently engaged" icon={<Sparkles className="h-5 w-5 text-[var(--brand-primary)]" />} color="blue" />
             </div>
         <div className="grid lg:grid-cols-3 gap-8">
           <Card className="lg:col-span-2 border-none shadow-2xl shadow-gray-200/50 rounded-[2.5rem] overflow-hidden">
             <CardHeader className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-100 p-8">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Sparkles className="h-5 w-5 text-[#004D20]" />
+                  <Sparkles className="h-5 w-5 text-[var(--brand-primary)]" />
                   <CardTitle className="text-xl font-black">All Users</CardTitle>
                 </div>
                 <Link href="/admin/users/create">
-                  <Button className="rounded-2xl bg-[#004D20] hover:bg-[#003D1A] gap-2">
+                  <Button className="rounded-2xl bg-[var(--brand-primary)] hover:bg-[#02629b] gap-2">
                     <Plus className="h-4 w-4" />
                     Add User
                   </Button>
@@ -305,7 +305,7 @@ export default function SuperAdminDashboardPage() {
                   <input
                     type="text"
                     placeholder="Search users by name or email..."
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#004D20] focus:border-transparent font-medium"
+                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] focus:border-transparent font-medium"
                     value={searchQuery}
                     onChange={(e) => {
                       setSearchQuery(e.target.value);
@@ -313,7 +313,7 @@ export default function SuperAdminDashboardPage() {
                     }}
                   />
                 </div>
-                <Button variant="outline" className="gap-2 rounded-2xl h-12 px-6 border-gray-200 hover:border-[#004D20] hover:bg-emerald-50">
+                <Button variant="outline" className="gap-2 rounded-2xl h-12 px-6 border-gray-200 hover:border-[var(--brand-primary)] hover:bg-blue-50">
                   <Filter className="h-4 w-4" />
                   Filters
                 </Button>
@@ -321,7 +321,7 @@ export default function SuperAdminDashboardPage() {
 
               {loading ? (
                 <div className="flex justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-[#004D20]" />
+                  <Loader2 className="h-8 w-8 animate-spin text-[var(--brand-primary)]" />
                 </div>
               ) : users.length === 0 ? (
                 <div className="text-center py-12">
@@ -329,7 +329,7 @@ export default function SuperAdminDashboardPage() {
                   <h3 className="mt-4 text-lg font-bold text-gray-900">No users found</h3>
                   <p className="mt-1 text-gray-500">Get started by creating your first user.</p>
                   <Link href="/admin/users/create">
-                    <Button className="mt-4 rounded-2xl bg-[#004D20]">Create User</Button>
+                    <Button className="mt-4 rounded-2xl bg-[var(--brand-primary)]">Create User</Button>
                   </Link>
                 </div>
               ) : (
@@ -365,7 +365,7 @@ export default function SuperAdminDashboardPage() {
                           </td>
                           <td className="py-4 px-4">
                             <div className="flex items-center gap-3">
-                              <div className="w-10 h-10 bg-gradient-to-br from-[#004D20] to-emerald-600 rounded-xl flex items-center justify-center text-white font-bold text-sm">
+                              <div className="w-10 h-10 bg-gradient-to-br from-[var(--brand-primary)] to-[var(--brand-secondary)] rounded-xl flex items-center justify-center text-white font-bold text-sm">
                                 {user.firstName[0]}{user.lastName[0]}
                               </div>
                               <div>
@@ -463,7 +463,7 @@ export default function SuperAdminDashboardPage() {
               <div>
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Completion Rate</p>
                 <div className="h-2 w-full bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-[#004D20] rounded-full transition-all duration-1000" style={{ width: `${stats.completionRate}%` }} />
+                  <div className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000" style={{ width: `${stats.completionRate}%` }} />
                 </div>
                 <p className="text-xs text-gray-400 mt-1 font-medium">{stats.completionRate}% of enrollments completed</p>
               </div>
@@ -471,18 +471,18 @@ export default function SuperAdminDashboardPage() {
                 <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Learners</span><span className="font-bold text-blue-400">{stats.totalLearners}</span></div>
                 <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Tutors</span><span className="font-bold text-emerald-400">{stats.totalTutors}</span></div>
                 <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Active Learners</span><span className="font-bold text-purple-400">{stats.activeLearners}</span></div>
-                <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Enrollments</span><span className="font-bold text-[#004D20]">{stats.totalEnrollments}</span></div>
+                <div className="flex items-center justify-between text-sm"><span className="text-gray-400">Total Enrollments</span><span className="font-bold text-[var(--brand-primary)]">{stats.totalEnrollments}</span></div>
               </div>
               <div className="pt-4 space-y-3">
                 <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Quick Actions</p>
                 <div className="grid grid-cols-2 gap-3">
                   <Link href="/superadmin/courses/create" className="block">
-                    <Button className="w-full rounded-2xl h-10 bg-[#004D20] hover:bg-[#003D1A] gap-1.5 text-xs font-bold shadow-lg shadow-green-900/20">
+                    <Button className="w-full rounded-2xl h-10 bg-[var(--brand-primary)] hover:bg-[#02629b] gap-1.5 text-xs font-bold shadow-lg shadow-blue-900/20">
                       <BookOpen className="h-3.5 w-3.5" />New Course
                     </Button>
                   </Link>
                   <Link href="/superadmin/quiz/create" className="block">
-                    <Button className="w-full rounded-2xl h-10 bg-[#004D20] hover:bg-[#003D1A] gap-1.5 text-xs font-bold shadow-lg shadow-green-900/20">
+                    <Button className="w-full rounded-2xl h-10 bg-[var(--brand-primary)] hover:bg-[#02629b] gap-1.5 text-xs font-bold shadow-lg shadow-blue-900/20">
                       <Sparkles className="h-3.5 w-3.5" />New Quiz
                     </Button>
                   </Link>
@@ -509,7 +509,7 @@ export default function SuperAdminDashboardPage() {
       {activeTab === 'traffic' && (
         <div className="space-y-8">
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Unique Visitors" value={loading ? '—' : stats.totalVisits} description="Platform traffic" icon={<Filter className="h-5 w-5 text-[#004D20]" />} color="green" />
+            <StatCard title="Unique Visitors" value={loading ? '—' : stats.totalVisits} description="Platform traffic" icon={<Filter className="h-5 w-5 text-[var(--brand-primary)]" />} color="blue" />
             <StatCard title="Desktop Visits" value={loading ? '—' : stats.desktopVisits} description="Desktop users" icon={<Filter className="h-5 w-5 text-blue-600" />} color="blue" />
             <StatCard title="Mobile Visits" value={loading ? '—' : stats.mobileVisits} description="Mobile users" icon={<Filter className="h-5 w-5 text-purple-600" />} color="purple" />
             <StatCard title="System Attendances" value={loading ? '—' : stats.totalAttendances} description="Overall marked attendance" icon={<Calendar className="h-5 w-5 text-orange-600" />} color="orange" />

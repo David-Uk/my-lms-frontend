@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { GraduationCap } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -68,12 +68,12 @@ function ResetPasswordForm() {
 
   if (success) {
     return (
-      <Card className="w-full">
+      <Card>
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <GraduationCap className="h-12 w-12 text-green-600" />
+            <KeyRound className="h-10 w-10 text-[var(--brand-primary)]" />
           </div>
-          <CardTitle className="text-2xl">Password Reset Complete</CardTitle>
+          <CardTitle className="text-xl font-bold text-gray-900">Password Reset Complete</CardTitle>
           <CardDescription>
             Your password has been reset successfully. Please login with your new password.
           </CardDescription>
@@ -88,12 +88,12 @@ function ResetPasswordForm() {
   }
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
-          <GraduationCap className="h-12 w-12 text-blue-600" />
+          <KeyRound className="h-10 w-10 text-gray-400" />
         </div>
-        <CardTitle className="text-2xl">Reset Password</CardTitle>
+        <CardTitle className="text-xl font-bold text-gray-900">Reset Password</CardTitle>
         <CardDescription>
           Enter your new password below
         </CardDescription>
@@ -105,7 +105,7 @@ function ResetPasswordForm() {
               {generalError}
             </div>
           )}
-          
+
           <Input
             label="New Password"
             type="password"
@@ -130,12 +130,12 @@ function ResetPasswordForm() {
             Reset Password
           </Button>
 
-          <div className="text-center text-sm">
+          <p className="text-center text-sm text-gray-500">
             Remember your password?{' '}
-            <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+            <Link href="/login" className="text-[var(--link-color)] hover:underline font-medium">
               Sign in
             </Link>
-          </div>
+          </p>
         </form>
       </CardContent>
     </Card>
@@ -145,9 +145,9 @@ function ResetPasswordForm() {
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={
-      <Card className="w-full">
+      <Card>
         <CardContent className="p-8 text-center">
-          <div className="animate-pulse">Loading...</div>
+          <div className="animate-pulse text-sm text-gray-400">Loading...</div>
         </CardContent>
       </Card>
     }>

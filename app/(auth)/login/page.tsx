@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Logo } from '@/components/ui/logo';
 import { useAuth } from '@/stores/auth-store';
 import { api } from '@/lib/api';
 import type { LoginRequest } from '@/types';
@@ -34,22 +33,14 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('[Login] Form submitted');
     setGeneralError('');
 
-    if (!validate()) {
-      console.log('[Login] Validation failed', errors);
-      return;
-    }
+    if (!validate()) return;
 
-    console.log('[Login] Validation passed, making API call...');
     setIsLoading(true);
     try {
-      console.log('[Login] Calling api.post(/auth/login)');
       let response = await api.post<any>('/auth/login', formData);
-      console.log('[Login] API call completed, response received:', response);
 
-      // Auto-parse if response is a string (final safety layer)
       if (typeof response === 'string') {
         try {
           response = JSON.parse(response);
@@ -57,15 +48,9 @@ export default function LoginPage() {
           // Stay as string if parse fails
         }
       }
-      console.log(response);
 
-      // Adaptive user extraction
       const userData = response?.user || response?.data?.user;
       const authToken = response?.token || response?.data?.token;
-
-      console.log('[Login] API response:', response);
-      console.log('[Login] Extracted userData:', userData);
-      console.log('[Login] userData.role:', userData?.role);
 
       if (!userData || !authToken) {
         const receivedStr = typeof response === 'object' ? Object.keys(response || {}).join(', ') : `String value: "${String(response).substring(0, 100)}"`;
@@ -75,7 +60,6 @@ export default function LoginPage() {
       login(authToken, userData);
 
       const role = userData.role;
-
       let redirectUrl: string;
       switch (role) {
         case 'superadmin':
@@ -107,65 +91,58 @@ export default function LoginPage() {
   };
 
   return (
-    <Card className="w-full border-none shadow-2xl shadow-green-900/10 rounded-[2rem] overflow-hidden bg-white">
-      <CardHeader className="text-center pb-2 pt-10">
-        <div className="flex justify-center mb-6">
-          <Logo iconOnly className="h-20 w-20" />
-        </div>
-        <CardTitle className="text-3xl font-poppins font-black text-gray-900 tracking-tight">Welcome Back</CardTitle>
-        <CardDescription className="text-gray-500 font-medium">
-          Secure access to the Edo digital ecosystem
-        </CardDescription>
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl font-bold text-gray-900">Welcome Back</CardTitle>
+        <CardDescription>Sign in to your account</CardDescription>
       </CardHeader>
-      <CardContent className="p-8 lg:p-10">
-        <form onSubmit={handleSubmit} className="space-y-6">
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
           {generalError && (
-            <div className="rounded-xl bg-red-50 p-4 text-sm font-bold text-red-600 animate-in fade-in slide-in-from-top-2">
+            <div className="rounded-lg bg-red-50 p-3 text-sm text-red-600">
               {generalError}
             </div>
           )}
 
           <Input
-            label="Institutional Email"
+            label="Email"
             type="email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             error={errors.email}
-            placeholder="you@edoinnovates.com"
+            placeholder="you@example.com"
             required
-            className="h-12"
           />
 
           <Input
-            label="Secret Password"
+            label="Password"
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             error={errors.password}
             placeholder="••••••••"
             required
-            className="h-12"
           />
 
           <div className="flex items-center justify-end">
             <Link
               href="/forgot-password"
-              className="text-xs font-black uppercase tracking-widest text-[#004D20] hover:text-[#00A651] transition-colors"
+              className="text-xs font-medium text-[var(--link-color)] hover:underline"
             >
               Forgot password?
             </Link>
           </div>
 
-          <Button type="submit" className="w-full bg-[#004D20] hover:bg-black text-white h-14 rounded-2xl font-black shadow-xl shadow-green-900/20 transition-all duration-300 active:scale-95 text-lg" isLoading={isLoading}>
-            Sign in
+          <Button type="submit" className="w-full" isLoading={isLoading}>
+            Sign In
           </Button>
 
-          <div className="text-center text-sm font-medium text-gray-400 uppercase tracking-widest pt-4">
-            New talent?{' '}
-            <Link href="/signup" className="text-[#004D20] hover:text-[#00A651] font-black transition-colors underline decoration-[#00A651]/30 underline-offset-4 pointer-events-auto">
+          <p className="text-center text-sm text-gray-500">
+            Don&apos;t have an account?{' '}
+            <Link href="/signup" className="text-[var(--link-color)] hover:underline font-medium">
               Sign up
             </Link>
-          </div>
+          </p>
         </form>
       </CardContent>
     </Card>

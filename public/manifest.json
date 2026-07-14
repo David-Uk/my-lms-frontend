@@ -1,93 +1,20 @@
 {
   "name": "Edo Innovates LMS",
   "short_name": "Edo LMS",
-  "description": "A comprehensive learning management system for modern education",
+  "description": "Learning Management System by Edo Innovates",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#004D20",
+  "background_color": "#f5f5f5",
+  "theme_color": "#0374B5",
   "orientation": "portrait-primary",
-  "categories": ["education", "productivity"],
-  "lang": "en",
-  "scope": "/",
   "icons": [
-    {
-      "src": "/icons/icon-72x72.svg",
-      "sizes": "72x72",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-96x96.svg",
-      "sizes": "96x96",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-128x128.svg",
-      "sizes": "128x128",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-192x192.svg",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-384x384.svg",
-      "sizes": "384x384",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "/icons/icon-512x512.svg",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
+    { "src": "/icons/icon-72x72.svg", "sizes": "72x72", "type": "image/svg+xml" },
+    { "src": "/icons/icon-96x96.svg", "sizes": "96x96", "type": "image/svg+xml" },
+    { "src": "/icons/icon-128x128.svg", "sizes": "128x128", "type": "image/svg+xml" },
+    { "src": "/icons/icon-192x192.svg", "sizes": "192x192", "type": "image/svg+xml" },
+    { "src": "/icons/icon-384x384.svg", "sizes": "384x384", "type": "image/svg+xml" },
+    { "src": "/icons/icon-512x512.svg", "sizes": "512x512", "type": "image/svg+xml" }
   ],
-  "screenshots": [],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "View your learning dashboard",
-      "url": "/dashboard",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.svg",
-          "sizes": "96x96",
-          "type": "image/svg+xml"
-        }
-      ]
-    },
-    {
-      "name": "Courses",
-      "short_name": "Courses",
-      "description": "Browse your courses",
-      "url": "/courses",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.svg",
-          "sizes": "96x96",
-          "type": "image/svg+xml"
-        }
-      ]
-    },
-    {
-      "name": "Profile",
-      "short_name": "Profile",
-      "description": "View your profile",
-      "url": "/profile",
-      "icons": [
-        {
-          "src": "/icons/icon-96x96.svg",
-          "sizes": "96x96",
-          "type": "image/svg+xml"
-        }
-      ]
-    }
-  ]
+  "categories": ["education"],
+  "lang": "en-US"
 }

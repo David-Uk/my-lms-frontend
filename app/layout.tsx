@@ -44,8 +44,8 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-title': 'Edo LMS',
     'format-detection': 'telephone=no',
     'mobile-web-app-capable': 'yes',
-    'msapplication-TileColor': '#004D20',
-    'theme-color': '#004D20',
+    'msapplication-TileColor': '#0374B5',
+    'theme-color': '#0374B5',
   },
 };
 

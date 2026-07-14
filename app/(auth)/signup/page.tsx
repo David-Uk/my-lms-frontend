@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Logo } from '@/components/ui/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -58,12 +57,9 @@ export default function SignupPage() {
 
   if (success) {
     return (
-      <Card className="w-full">
+      <Card>
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Logo className="h-12 w-12 text-[#004D20]" />
-          </div>
-          <CardTitle className="text-2xl">Account Created!</CardTitle>
+          <CardTitle className="text-xl font-bold text-gray-900">Account Created!</CardTitle>
           <CardDescription>
             Your account has been created successfully. Please login to continue.
           </CardDescription>
@@ -78,15 +74,10 @@ export default function SignupPage() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="text-center pb-2">
-        <div className="flex justify-center mb-6">
-          <Logo iconOnly className="h-16 w-16" />
-        </div>
-        <CardTitle className="text-3xl font-poppins font-black text-gray-900 tracking-tight">Create an Account</CardTitle>
-        <CardDescription className="font-medium text-gray-500">
-          Join the Edo Innovates digital ecosystem
-        </CardDescription>
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle className="text-xl font-bold text-gray-900">Create an Account</CardTitle>
+        <CardDescription>Join the Edo Innovates digital ecosystem</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -96,7 +87,7 @@ export default function SignupPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Input
               label="First Name"
               value={formData.firstName}
@@ -140,27 +131,27 @@ export default function SignupPage() {
             onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
           />
 
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <label className="text-sm font-medium text-gray-700">Bio (Optional)</label>
             <textarea
               value={formData.bio}
               onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 bg-white focus:border-[var(--link-color)] focus:outline-none focus:ring-1 focus:ring-[var(--link-color)] transition-colors"
               rows={3}
               placeholder="Tell us a bit about yourself..."
             />
           </div>
 
-          <Button type="submit" className="w-full bg-[#004D20] hover:bg-black text-white h-12 rounded-xl font-bold shadow-xl shadow-green-900/10 transition-all duration-300" isLoading={isLoading}>
+          <Button type="submit" className="w-full" isLoading={isLoading}>
             Create Account
           </Button>
 
-          <div className="text-center text-sm font-medium text-gray-500">
+          <p className="text-center text-sm text-gray-500">
             Already have an account?{' '}
-            <Link href="/login" className="text-[#004D20] hover:text-[#00A651] font-bold transition-colors">
+            <Link href="/login" className="text-[var(--link-color)] hover:underline font-medium">
               Sign in
             </Link>
-          </div>
+          </p>
         </form>
       </CardContent>
     </Card>

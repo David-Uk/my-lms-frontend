@@ -14,8 +14,6 @@ import {
   Settings,
   LogOut,
   Brain,
-  ChevronLeft,
-  ChevronRight,
   Sparkles,
   Shield,
   Server,
@@ -23,7 +21,6 @@ import {
   Trophy,
   BarChart3,
 } from 'lucide-react';
-import { Logo } from '@/components/ui/logo';
 import { memo, useMemo } from 'react';
 
 interface NavItem {
@@ -34,162 +31,141 @@ interface NavItem {
 
 const navConfigs: Record<string, NavItem[]> = {
   superadmin: [
-    { label: 'Dashboard', href: '/superadmin/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { label: 'Manage Admins', href: '/superadmin/admins', icon: <Shield className="h-5 w-5" /> },
-    { label: 'All Users', href: '/admin/users', icon: <Users className="h-5 w-5" /> },
-    { label: 'Learners', href: '/admin/learners', icon: <BookOpen className="h-5 w-5" /> },
-    { label: 'Tutors', href: '/admin/tutors', icon: <Users className="h-5 w-5" /> },
-    { label: 'Courses', href: '/admin/courses', icon: <BookOpen className="h-5 w-5" /> },
-    { label: 'AI Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles className="h-5 w-5" /> },
-    { label: 'System', href: '/superadmin/system', icon: <Server className="h-5 w-5" /> },
-    { label: 'Audit Logs', href: '/superadmin/audit', icon: <FileText className="h-5 w-5" /> },
-    { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
+    { label: 'Dashboard', href: '/superadmin/dashboard', icon: <LayoutDashboard /> },
+    { label: 'Manage Admins', href: '/superadmin/admins', icon: <Shield /> },
+    { label: 'All Users', href: '/admin/users', icon: <Users /> },
+    { label: 'Learners', href: '/admin/learners', icon: <GraduationCap /> },
+    { label: 'Tutors', href: '/admin/tutors', icon: <UserCircle /> },
+    { label: 'Courses', href: '/admin/courses', icon: <BookOpen /> },
+    { label: 'Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles /> },
+    { label: 'System', href: '/superadmin/system', icon: <Server /> },
+    { label: 'Audit Logs', href: '/superadmin/audit', icon: <FileText /> },
+    { label: 'Profile', href: '/profile', icon: <Settings /> },
   ],
   admin: [
-    { label: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { label: 'Users', href: '/admin/users', icon: <Users className="h-5 w-5" /> },
-    { label: 'Learners', href: '/admin/learners', icon: <GraduationCap className="h-5 w-5" /> },
-    { label: 'Tutors', href: '/admin/tutors', icon: <UserCircle className="h-5 w-5" /> },
-    { label: 'Courses', href: '/admin/courses', icon: <BookOpen className="h-5 w-5" /> },
-    { label: 'AI Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles className="h-5 w-5" /> },
-    { label: 'AI Performance', href: '/admin/ai-performance', icon: <Brain className="h-5 w-5" /> },
-    { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
+    { label: 'Dashboard', href: '/admin/dashboard', icon: <LayoutDashboard /> },
+    { label: 'Users', href: '/admin/users', icon: <Users /> },
+    { label: 'Learners', href: '/admin/learners', icon: <GraduationCap /> },
+    { label: 'Tutors', href: '/admin/tutors', icon: <UserCircle /> },
+    { label: 'Courses', href: '/admin/courses', icon: <BookOpen /> },
+    { label: 'Quiz Gen', href: '/tutor/sessions/generate', icon: <Sparkles /> },
+    { label: 'AI Perf', href: '/admin/ai-performance', icon: <Brain /> },
+    { label: 'Profile', href: '/profile', icon: <Settings /> },
   ],
   tutor: [
-    { label: 'Dashboard', href: '/tutor/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { label: 'My Courses', href: '/tutor/courses', icon: <BookOpen className="h-5 w-5" /> },
-    { label: 'My Students', href: '/tutor/students', icon: <Users className="h-5 w-5" /> },
-    { label: 'Quiz Sessions', href: '/tutor/sessions', icon: <Trophy className="h-5 w-5" /> },
-    { label: 'AI Quiz Generator', href: '/tutor/sessions/generate', icon: <Sparkles className="h-5 w-5" /> },
-    { label: 'AI Tools', href: '/tutor/ai', icon: <Brain className="h-5 w-5" /> },
-    { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
+    { label: 'Dashboard', href: '/tutor/dashboard', icon: <LayoutDashboard /> },
+    { label: 'Courses', href: '/tutor/courses', icon: <BookOpen /> },
+    { label: 'Students', href: '/tutor/students', icon: <Users /> },
+    { label: 'Quiz Sessions', href: '/tutor/sessions', icon: <Trophy /> },
+    { label: 'Quiz Gen', href: '/tutor/sessions/generate', icon: <Sparkles /> },
+    { label: 'AI Tools', href: '/tutor/ai', icon: <Brain /> },
+    { label: 'Profile', href: '/profile', icon: <Settings /> },
   ],
   learner: [
-    { label: 'Dashboard', href: '/learner/dashboard', icon: <LayoutDashboard className="h-5 w-5" /> },
-    { label: 'My Courses', href: '/learner/courses', icon: <BookOpen className="h-5 w-5" /> },
-    { label: 'My Progress', href: '/learner/progress', icon: <BarChart3 className="h-5 w-5" /> },
-    { label: 'Join Quiz', href: '/learner/join-quiz', icon: <Trophy className="h-5 w-5" /> },
-    { label: 'AI Study Tools', href: '/learner/ai', icon: <Brain className="h-5 w-5" /> },
-    { label: 'Profile', href: '/profile', icon: <Settings className="h-5 w-5" /> },
+    { label: 'Dashboard', href: '/learner/dashboard', icon: <LayoutDashboard /> },
+    { label: 'Courses', href: '/learner/courses', icon: <BookOpen /> },
+    { label: 'Progress', href: '/learner/progress', icon: <BarChart3 /> },
+    { label: 'Join Quiz', href: '/learner/join-quiz', icon: <Trophy /> },
+    { label: 'Study Tools', href: '/learner/ai', icon: <Brain /> },
+    { label: 'Profile', href: '/profile', icon: <Settings /> },
   ],
 };
 
 const fallbackNav = navConfigs.admin;
 
-const NavItemLink = memo(function NavItemLink({
+const CanvasNavItem = memo(function CanvasNavItem({
   item,
   isActive,
-  isCollapsed,
 }: {
   item: NavItem;
   isActive: boolean;
-  isCollapsed: boolean;
 }) {
   return (
     <Link
       href={item.href}
       className={cn(
-        'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-bold transition-all duration-300',
-        isActive
-          ? 'bg-[#004D20] text-white shadow-lg shadow-green-900/20'
-          : 'text-gray-500 hover:bg-gray-50 hover:text-[#004D20]'
+        'ic-app-header__menu-list-link group',
+        isActive && 'active'
       )}
-      title={isCollapsed ? item.label : undefined}
+      title={item.label}
     >
-      <div
-        className={cn(
-          'p-1.5 rounded-lg transition-colors flex-shrink-0',
-          isActive ? 'bg-white/10' : 'bg-gray-50 group-hover:bg-green-50'
-        )}
-      >
+      <div className="ic-app-header__menu-list-item-icon">
         {item.icon}
       </div>
-      {!isCollapsed && <span>{item.label}</span>}
+      <span>{item.label}</span>
     </Link>
   );
 });
 
+function CanvasLogo() {
+  return (
+    <div className="flex items-center justify-center h-16 border-b border-white/10">
+      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--brand-primary)]">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="h-5 w-5 text-white"
+        >
+          <path d="M15 6h.01" />
+          <path d="M17 18h.01" />
+          <path d="M10 20h4" />
+          <path d="M9 16c-1.6 0-3-1.3-3-3s1.4-3 3-3 3 1.3 3 3-1.4 3-3 3" />
+          <path d="M15 13c1.6 0 3-1.3 3-3s-1.4-3-3-3-3 1.3-3 3 1.4 3 3 3" />
+          <path d="M13 16h3" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
 export const Sidebar = memo(function Sidebar() {
   const pathname = usePathname();
   const { logout, user } = useAuth();
-  const { isCollapsed, toggleSidebar } = useSidebarStore();
+  const { isCollapsed } = useSidebarStore();
 
   const navItems = useMemo(() => {
     return navConfigs[user?.role || ''] || fallbackNav;
   }, [user?.role]);
 
+  const isActive = (href: string) => {
+    return pathname === href || pathname.startsWith(href + '/');
+  };
+
   return (
     <aside
       className={cn(
-        'fixed left-0 top-0 z-40 h-screen bg-white border-r border-gray-100 shadow-xl shadow-gray-200/50 transition-all duration-300',
-        isCollapsed ? 'w-20' : 'w-64'
+        'fixed left-0 top-0 z-40 h-screen bg-[var(--canvas-nav)] flex flex-col transition-all duration-200',
+        isCollapsed ? 'w-[72px]' : 'w-[84px]'
       )}
     >
-      <div className="flex h-full flex-col">
-        {/* Logo */}
-        <div className="flex h-20 items-center px-4">
-          <Link
-            href={navItems[0]?.href || '/dashboard'}
-            className="flex items-center gap-3"
-          >
-            {isCollapsed ? (
-              <div className="p-2 bg-[#004D20] rounded-xl flex-shrink-0">
-                <Logo iconOnly className="h-5 w-5 text-white" />
-              </div>
-            ) : (
-              <Logo />
-            )}
-          </Link>
-        </div>
+      <CanvasLogo />
 
-        {/* Collapse Toggle */}
-        <div className="flex justify-end p-2">
-          <button
-            onClick={toggleSidebar}
-            className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
-          </button>
-        </div>
-
-        {/* User Info */}
-        {!isCollapsed && (
-          <div className="px-6 py-4 border-b border-gray-100">
-            <p className="text-sm text-gray-500">Logged in as</p>
-            <p className="text-gray-900 font-bold truncate">
-              {user?.firstName} {user?.lastName}
-            </p>
-            <p className="text-xs text-[#004D20] font-medium uppercase tracking-wider">
-              {user?.role}
-            </p>
-          </div>
-        )}
-
-        {/* Navigation */}
-        <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
-          {navItems.map((item) => (
-            <NavItemLink
-              key={item.href}
+      <nav className="flex-1 flex flex-col pt-2 overflow-y-auto custom-scrollbar">
+        {navItems.map((item) => (
+          <div key={item.href} className="ic-app-header__menu-list-item">
+            <CanvasNavItem
               item={item}
-              isActive={pathname === item.href || pathname.startsWith(item.href + '/')}
-              isCollapsed={isCollapsed}
+              isActive={isActive(item.href)}
             />
-          ))}
-        </nav>
+          </div>
+        ))}
+      </nav>
 
-        {/* Logout */}
-        <div className="border-t border-gray-200 p-4">
+      <div className="border-t border-white/10">
+        <div className="ic-app-header__menu-list-item">
           <button
             onClick={logout}
-            className={cn(
-              'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors',
-              isCollapsed ? 'justify-center' : 'w-full'
-            )}
-            title={isCollapsed ? 'Logout' : undefined}
+            className="ic-app-header__menu-list-link w-full"
+            title="Logout"
           >
-            <LogOut className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && <span>Logout</span>}
+            <div className="ic-app-header__menu-list-item-icon">
+              <LogOut />
+            </div>
+            <span>Logout</span>
           </button>
         </div>
       </div>

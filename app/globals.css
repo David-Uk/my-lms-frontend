@@ -1,17 +1,39 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #1a1a1a;
-  
-  /* Edo Innovates Branding */
-  --brand-primary: #004d20; /* Forest Green */
-  --brand-secondary: #00a651; /* Grass Green */
-  --brand-accent: #f8f9fa; /* Light Grey */
-  
+  --background: #f5f5f5;
+  --foreground: #2d3b45;
+
+  /* Canvas LMS color palette */
+  --canvas-nav: #2d3b45;
+  --canvas-nav-hover: #405563;
+  --canvas-nav-active: #1f2a32;
+  --canvas-nav-text: #bec5cb;
+  --canvas-nav-text-hover: #ffffff;
+  --canvas-nav-icon: #8b969e;
+
+  /* Canvas-inspired brand colors */
+  --brand-primary: #0374b5;
+  --brand-secondary: #0081cb;
+  --brand-accent: #e8f0f8;
+
+  /* Canvas success/error/warning */
+  --color-success: #00ac18;
+  --color-danger: #d41b2c;
+  --color-warning: #fc5e13;
+  --color-info: #0374b5;
+
+  /* UI colors */
+  --card-bg: #ffffff;
+  --card-border: #c7cdd1;
+  --text-primary: #2d3b45;
+  --text-secondary: #6a757e;
+  --text-muted: #bec5cb;
+  --border-light: #c7cdd1;
+  --link-color: #0374b5;
+
   --primary: var(--brand-primary);
   --primary-foreground: #ffffff;
-  
   --secondary: var(--brand-secondary);
   --secondary-foreground: #ffffff;
 }
@@ -19,15 +41,23 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-brand-green: var(--brand-primary);
-  --color-brand-grass: var(--brand-secondary);
+  --color-canvas-nav: var(--canvas-nav);
+  --color-canvas-nav-hover: var(--canvas-nav-hover);
+  --color-canvas-nav-active: var(--canvas-nav-active);
+  --color-canvas-nav-text: var(--canvas-nav-text);
+  --color-brand-primary: var(--brand-primary);
+  --color-brand-secondary: var(--brand-secondary);
+  --color-success: var(--color-success);
+  --color-danger: var(--color-danger);
+  --color-link: var(--link-color);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--brand-accent);
+  background: var(--background);
   color: var(--foreground);
+  font-family: var(--font-roboto, 'Roboto', sans-serif);
 }
 
 @layer utilities {
@@ -44,4 +74,61 @@ body {
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
   }
+}
+
+.ic-app-header__menu-list-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.ic-app-header__menu-list-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 0;
+  color: var(--canvas-nav-text);
+  text-decoration: none;
+  transition: all 0.15s ease;
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  position: relative;
+}
+
+.ic-app-header__menu-list-link:hover {
+  color: var(--canvas-nav-text-hover);
+  background: var(--canvas-nav-hover);
+}
+
+.ic-app-header__menu-list-link.active {
+  color: var(--canvas-nav-text-hover);
+  background: var(--canvas-nav-hover);
+}
+
+.ic-app-header__menu-list-link.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--brand-primary);
+  border-radius: 0 3px 3px 0;
+}
+
+.ic-app-header__menu-list-item-icon {
+  width: 22px;
+  height: 22px;
+  color: var(--canvas-nav-icon);
+  transition: color 0.15s ease;
+}
+
+.ic-app-header__menu-list-link:hover .ic-app-header__menu-list-item-icon,
+.ic-app-header__menu-list-link.active .ic-app-header__menu-list-item-icon {
+  color: var(--canvas-nav-text-hover);
 }

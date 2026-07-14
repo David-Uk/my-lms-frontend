@@ -219,7 +219,7 @@ export default function AdminUsersPage() {
 
   const getRoleBadge = (role: string) => {
     const roleConfig: Record<string, { bg: string; icon: React.ReactNode; label: string }> = {
-      superadmin: { bg: 'bg-[#004D20] text-white', icon: <Crown className="h-3 w-3 mr-1" />, label: 'Super Admin' },
+      superadmin: { bg: 'bg-[var(--brand-primary)] text-white', icon: <Crown className="h-3 w-3 mr-1" />, label: 'Super Admin' },
       admin: { bg: 'bg-blue-100 text-blue-800', icon: <Shield className="h-3 w-3 mr-1" />, label: 'Admin' },
       tutor: { bg: 'bg-emerald-100 text-emerald-800', icon: <BookOpen className="h-3 w-3 mr-1" />, label: 'Tutor' },
       learner: { bg: 'bg-purple-100 text-purple-800', icon: <GraduationCap className="h-3 w-3 mr-1" />, label: 'Learner' },

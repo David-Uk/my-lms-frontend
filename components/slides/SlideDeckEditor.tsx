@@ -391,7 +391,7 @@ export function SlideDeckEditor({ courseId, deckId, onBack }: SlideDeckEditorPro
                     <CardTitle className="text-base">Slide Details</CardTitle>
                     <div className="flex gap-2">
                       <Badge variant="outline" className="capitalize">{currentSlide.type}</Badge>
-                      <Badge variant="secondary">{currentSlide.layout}</Badge>
+                      <Badge variant="neutral">{currentSlide.layout}</Badge>
                     </div>
                   </div>
                 </CardHeader>

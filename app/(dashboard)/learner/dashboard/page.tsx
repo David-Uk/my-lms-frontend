@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { BookOpen, Award, Clock, Target, ArrowRight, Play, Zap, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
@@ -65,22 +65,22 @@ export default function LearnerDashboardPage() {
     return date.toLocaleDateString();
   };
 
-  const getProgressGradient = (index: number) => {
-    const gradients = [
-      'from-blue-600 to-indigo-600',
-      'from-emerald-500 to-teal-600',
-      'from-purple-500 to-indigo-600',
-      'from-rose-500 to-orange-600',
-      'from-cyan-500 to-blue-600',
-      'from-amber-500 to-orange-600',
+  const getCourseColor = (index: number) => {
+    const colors = [
+      'border-l-blue-500',
+      'border-l-emerald-500',
+      'border-l-purple-500',
+      'border-l-amber-500',
+      'border-l-cyan-500',
+      'border-l-rose-500',
     ];
-    return gradients[index % gradients.length];
+    return colors[index % colors.length];
   };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-[var(--link-color)]" />
       </div>
     );
   }
@@ -94,176 +94,167 @@ export default function LearnerDashboardPage() {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-          <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tight">My Journey</h1>
-            <p className="text-gray-500 font-medium mt-1 text-lg">
-              {stats.recentEnrollments > 0
-                ? `You've enrolled in ${stats.recentEnrollments} new course${stats.recentEnrollments > 1 ? 's' : ''} this month!`
-                : 'Keep learning and growing your skills.'}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 bg-white p-3 rounded-full shadow-sm border border-gray-100">
-            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-              {stats.activeCourses} Active Course{stats.activeCourses !== 1 ? 's' : ''}
-            </span>
-          </div>
-        </div>
-
-        {/* Stats Grid */}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Enrolled"
-            value={stats.totalEnrolled.toString()}
-            description="Total courses"
-            icon={<BookOpen className="h-5 w-5 text-blue-600" />}
-            color="blue"
-          />
-          <StatCard
-            title="Completed"
-            value={stats.completedCourses.toString()}
-            description="Finished courses"
-            icon={<Award className="h-5 w-5 text-emerald-600" />}
-            color="emerald"
-          />
-          <StatCard
-            title="Active"
-            value={stats.activeCourses.toString()}
-            description="In progress"
-            icon={<Clock className="h-5 w-5 text-purple-600" />}
-            color="purple"
-          />
-          <StatCard
-            title="Progress"
-            value={`${stats.averageProgress}%`}
-            description="Avg. completion"
-            icon={<Target className="h-5 w-5 text-orange-600" />}
-            color="orange"
-          />
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Continue Learning */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                <Play className="h-5 w-5 text-blue-600 fill-blue-600" />
-                Continue Learning
-              </h2>
-              <Link href="/learner/courses">
-                <Button variant="ghost" className="text-blue-600 font-bold">View All Courses</Button>
-              </Link>
-            </div>
-
-            {data?.enrolledCourses && data.enrolledCourses.length > 0 ? (
-              <div className="grid sm:grid-cols-2 gap-6">
-                {data.enrolledCourses.map((course, index) => (
-                  <CourseProgressCard
-                    key={course.id}
-                    id={course.id}
-                    title={course.title}
-                    progress={course.progress}
-                    lastAccessed={formatLastAccessed(course.lastAccessed)}
-                    gradient={getProgressGradient(index)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-8 text-center">
-                <BookOpen className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No courses yet</h3>
-                <p className="text-gray-500 mt-1">Enroll in a course to start your learning journey.</p>
-                <Link href="/learner/courses" className="mt-4 inline-block">
-                  <Button>Browse Courses</Button>
-                </Link>
-              </Card>
-            )}
-          </div>
-
-          {/* Quick Actions & AI */}
-          <div className="space-y-8">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight flex items-center gap-2">
-                <Zap className="h-5 w-5 text-yellow-500 fill-yellow-500" />
-                Daily Pulse
-              </h2>
-            </div>
-
-            <div className="space-y-4">
-              <Link href="/learner/join-quiz" className="block group">
-                <Card className="border-none shadow-lg hover:shadow-2xl hover:shadow-blue-100 transition-all duration-300 p-6 bg-linear-to-br from-gray-900 to-black text-white rounded-3xl overflow-hidden relative">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-500/40 transition-colors" />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="p-3 bg-blue-600 rounded-2xl shadow-lg shadow-blue-500/50">
-                      <Zap className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="font-black text-lg">Live Session</h4>
-                      <p className="text-xs text-gray-400 font-medium">Join a quiz with your cohorts</p>
-                    </div>
-                    <ArrowRight className="ml-auto h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Card>
-              </Link>
-
-              <Link href="/learner/ai" className="block group">
-                <Card className="border-none shadow-lg hover:shadow-2xl hover:shadow-purple-100 transition-all duration-300 p-6 bg-white rounded-3xl overflow-hidden relative border border-gray-100">
-                  <div className="absolute -top-10 -right-10 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl group-hover:bg-purple-500/20 transition-colors" />
-                  <div className="relative z-10 flex items-center gap-4">
-                    <div className="p-3 bg-purple-100 rounded-2xl">
-                      <Sparkles className="h-6 w-6 text-purple-600" />
-                    </div>
-                    <div>
-                      <h4 className="font-black text-lg text-gray-900">AI Assistant</h4>
-                      <p className="text-xs text-gray-500 font-medium">Generate quizzes & flashcards</p>
-                    </div>
-                    <ArrowRight className="ml-auto h-5 w-5 text-gray-300 group-hover:text-purple-600 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </Card>
-              </Link>
-            </div>
-
-            <Card className="border-none shadow-xl shadow-gray-100 rounded-3xl bg-blue-50 p-6">
-              <h4 className="font-black text-gray-900 mb-2">Did you know?</h4>
-              <p className="text-sm text-blue-700/80 font-medium italic leading-relaxed">
-                &quot;Consistent learning for just 20 minutes a day increases retention by up to 60% compared to marathon sessions.&quot;
-              </p>
-            </Card>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">My Dashboard</h1>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {stats.recentEnrollments > 0
+            ? `You've enrolled in ${stats.recentEnrollments} new course${stats.recentEnrollments > 1 ? 's' : ''} this month!`
+            : 'Keep learning and growing your skills.'}
+        </p>
       </div>
-  );
-}
 
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Enrolled"
+          value={stats.totalEnrolled.toString()}
+          description="Total courses"
+          icon={<BookOpen className="h-5 w-5" />}
+          color="blue"
+        />
+        <StatCard
+          title="Completed"
+          value={stats.completedCourses.toString()}
+          description="Finished courses"
+          icon={<Award className="h-5 w-5" />}
+          color="emerald"
+        />
+        <StatCard
+          title="Active"
+          value={stats.activeCourses.toString()}
+          description="In progress"
+          icon={<Clock className="h-5 w-5" />}
+          color="purple"
+        />
+        <StatCard
+          title="Progress"
+          value={`${stats.averageProgress}%`}
+          description="Avg. completion"
+          icon={<Target className="h-5 w-5" />}
+          color="amber"
+        />
+      </div>
 
-function CourseProgressCard({ id, title, progress, lastAccessed, gradient }: { id: string; title: string; progress: number; lastAccessed: string; gradient: string }) {
-  return (
-    <div className="group relative bg-white rounded-3xl p-6 shadow-lg shadow-gray-100 border border-gray-50 hover:shadow-2xl transition-all duration-500 hover:-translate-y-1">
-      <div className="flex flex-col h-full">
-        <div className="flex-1 space-y-2 mb-6">
-          <h4 className="font-black text-gray-900 leading-tight group-hover:text-blue-600 transition-colors uppercase text-sm tracking-tight">{title}</h4>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active {lastAccessed}</p>
-        </div>
-
-        <div className="space-y-3">
-          <div className="flex justify-between items-end">
-            <span className="text-2xl font-black text-gray-900">{progress}%</span>
-            <Link href={`/learner/courses/${id}`}>
-              <Button className={`h-10 w-10 rounded-xl bg-linear-to-br ${gradient} shadow-lg text-white transition-transform active:scale-90 group-hover:rotate-12`}>
-                <Play className="h-4 w-4 fill-white" />
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Continue Learning */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+              <Play className="h-4 w-4 text-blue-600" />
+              Continue Learning
+            </h2>
+            <Link href="/learner/courses">
+              <Button variant="ghost" size="sm" className="text-[var(--link-color)]">
+                View All Courses
               </Button>
             </Link>
           </div>
-          <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden p-0.5">
-            <div
-              className={`h-full rounded-full bg-gradient-to-r ${gradient} transition-all duration-1000 shadow-sm`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
+
+          {data?.enrolledCourses && data.enrolledCourses.length > 0 ? (
+            <div className="space-y-3">
+              {data.enrolledCourses.map((course, index) => (
+                <CourseProgressCard
+                  key={course.id}
+                  id={course.id}
+                  title={course.title}
+                  progress={course.progress}
+                  lastAccessed={formatLastAccessed(course.lastAccessed)}
+                  borderColor={getCourseColor(index)}
+                />
+              ))}
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <BookOpen className="mx-auto h-10 w-10 text-gray-300 mb-3" />
+                <h3 className="text-base font-medium text-gray-900">No courses yet</h3>
+                <p className="text-sm text-gray-500 mt-1">Enroll in a course to start your learning journey.</p>
+                <Link href="/learner/courses" className="mt-4 inline-block">
+                  <Button size="sm">Browse Courses</Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+            <Zap className="h-4 w-4 text-amber-500" />
+            Quick Links
+          </h2>
+
+          <Link href="/learner/join-quiz" className="block">
+            <Card className="hover:border-gray-300 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-50 rounded-lg">
+                  <Zap className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">Live Quiz</p>
+                  <p className="text-xs text-gray-500">Join a quiz session</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-300" />
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/learner/ai" className="block">
+            <Card className="hover:border-gray-300 transition-colors cursor-pointer">
+              <CardContent className="p-4 flex items-center gap-3">
+                <div className="p-2 bg-purple-50 rounded-lg">
+                  <Sparkles className="h-5 w-5 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-900">AI Study Tools</p>
+                  <p className="text-xs text-gray-500">Generate quizzes & flashcards</p>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-300" />
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Card className="bg-blue-50 border-blue-100">
+            <CardContent className="p-4">
+              <p className="text-sm font-medium text-gray-900 mb-1">Did you know?</p>
+              <p className="text-xs text-blue-700/80 leading-relaxed">
+                &quot;Just 20 minutes of daily learning can boost retention by up to 60%.&quot;
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
+  );
+}
+
+function CourseProgressCard({ id, title, progress, lastAccessed, borderColor }: { id: string; title: string; progress: number; lastAccessed: string; borderColor: string }) {
+  return (
+    <Link href={`/learner/courses/${id}`}>
+      <Card className={`hover:border-gray-300 transition-colors border-l-4 ${borderColor}`}>
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 min-w-0 mr-4">
+              <p className="text-sm font-medium text-gray-900 truncate">{title}</p>
+              <p className="text-xs text-gray-500 mt-0.5">Last accessed {lastAccessed}</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-semibold text-gray-900">{progress}%</p>
+              </div>
+              <div className="w-24">
+                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-[var(--brand-primary)] rounded-full transition-all duration-1000"
+                    style={{ width: `${progress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </Link>
   );
 }

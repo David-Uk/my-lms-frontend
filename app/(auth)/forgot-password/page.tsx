@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { GraduationCap } from 'lucide-react';
+import { KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,7 +28,6 @@ export default function ForgotPasswordPage() {
       await api.post('/auth/forgot-password', { email });
       setSuccess(true);
     } catch {
-      // Always show success for security
       setSuccess(true);
     } finally {
       setIsLoading(false);
@@ -37,12 +36,12 @@ export default function ForgotPasswordPage() {
 
   if (success) {
     return (
-      <Card className="w-full">
+      <Card>
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <GraduationCap className="h-12 w-12 text-green-600" />
+            <KeyRound className="h-10 w-10 text-[var(--brand-primary)]" />
           </div>
-          <CardTitle className="text-2xl">Check Your Email</CardTitle>
+          <CardTitle className="text-xl font-bold text-gray-900">Check Your Email</CardTitle>
           <CardDescription>
             If an account exists with this email, you will receive password reset instructions.
           </CardDescription>
@@ -57,12 +56,12 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <Card className="w-full">
+    <Card>
       <CardHeader className="text-center">
         <div className="flex justify-center mb-4">
-          <GraduationCap className="h-12 w-12 text-blue-600" />
+          <KeyRound className="h-10 w-10 text-gray-400" />
         </div>
-        <CardTitle className="text-2xl">Forgot Password?</CardTitle>
+        <CardTitle className="text-xl font-bold text-gray-900">Forgot Password?</CardTitle>
         <CardDescription>
           Enter your email and we&apos;ll send you reset instructions
         </CardDescription>
@@ -88,12 +87,12 @@ export default function ForgotPasswordPage() {
             Send Reset Instructions
           </Button>
 
-          <div className="text-center text-sm">
+          <p className="text-center text-sm text-gray-500">
             Remember your password?{' '}
-            <Link href="/login" className="text-blue-600 hover:text-blue-500 font-medium">
+            <Link href="/login" className="text-[var(--link-color)] hover:underline font-medium">
               Sign in
             </Link>
-          </div>
+          </p>
         </form>
       </CardContent>
     </Card>

@@ -23,32 +23,31 @@ const testimonials = [
 
 export function TestimonialsSection() {
   return (
-    <section id="testimonials" className="py-24 lg:py-32">
+    <section id="testimonials" className="py-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16">
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-4">
-            Loved by{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Thousands</span>
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4 tracking-tight">
+            Loved by <span className="text-[var(--brand-primary)]">Thousands</span>
           </h2>
-          <p className="text-lg text-gray-600">See what our users have to say</p>
+          <p className="text-gray-500">See what our users have to say</p>
         </div>
 
-        <div className="grid md:grid-cols-3 gap-8">
+        <div className="grid md:grid-cols-3 gap-6">
           {testimonials.map((testimonial, i) => (
-            <div key={i} className="bg-white rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
-              <div className="flex gap-1 mb-4">
+            <div key={i} className="bg-white rounded-lg p-6 border border-gray-200">
+              <div className="flex gap-0.5 mb-4">
                 {[...Array(5)].map((_, j) => (
-                  <Star key={j} className="h-5 w-5 fill-yellow-400 text-yellow-400" />
+                  <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
                 ))}
               </div>
-              <p className="text-gray-700 mb-6 leading-relaxed">&ldquo;{testimonial.content}&rdquo;</p>
+              <p className="text-sm text-gray-600 mb-4 leading-relaxed">&ldquo;{testimonial.content}&rdquo;</p>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                <div className="w-9 h-9 bg-gray-200 rounded-full flex items-center justify-center text-xs font-semibold text-gray-600">
                   {testimonial.avatar}
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900">{testimonial.name}</p>
-                  <p className="text-sm text-gray-500">{testimonial.role}</p>
+                  <p className="text-sm font-medium text-gray-900">{testimonial.name}</p>
+                  <p className="text-xs text-gray-500">{testimonial.role}</p>
                 </div>
               </div>
             </div>
