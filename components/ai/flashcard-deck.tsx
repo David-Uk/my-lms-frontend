@@ -10,6 +10,7 @@ interface Flashcard {
 
 interface FlashcardDeckProps {
     flashcards: Flashcard[];
+    savedSetId?: string;
 }
 
 function FlashcardItem({ card, index }: { card: Flashcard; index: number }) {
@@ -31,7 +32,6 @@ function FlashcardItem({ card, index }: { card: Flashcard; index: number }) {
                     minHeight: '160px',
                 }}
             >
-                {/* Front — Question */}
                 <div
                     className="absolute inset-0 flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-blue-100 bg-gradient-to-br from-blue-50 to-indigo-50 text-center"
                     style={{ backfaceVisibility: 'hidden' }}
@@ -42,7 +42,6 @@ function FlashcardItem({ card, index }: { card: Flashcard; index: number }) {
                     <p className="font-bold text-gray-900 text-sm leading-relaxed">{card.front}</p>
                 </div>
 
-                {/* Back — Answer */}
                 <div
                     className="absolute inset-0 flex flex-col items-center justify-center p-5 rounded-2xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 text-center"
                     style={{

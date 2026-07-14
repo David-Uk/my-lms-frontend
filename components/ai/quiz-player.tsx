@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CheckCircle2, XCircle, RotateCcw, Trophy } from 'lucide-react';
+import { CheckCircle2, XCircle, RotateCcw, Trophy, Bookmark } from 'lucide-react';
 
 interface QuizQuestion {
     question: string;
@@ -11,16 +11,19 @@ interface QuizQuestion {
 
 interface QuizPlayerProps {
     questions: QuizQuestion[];
+    savedQuizId?: string;
+    onSave?: (score: number, total: number) => void;
+    onRetake?: () => void;
 }
 
 type QuizState = 'taking' | 'results';
 
-export function QuizPlayer({ questions }: QuizPlayerProps) {
+export function QuizPlayer({ questions, savedQuizId, onSave, onRetake }: QuizPlayerProps) {
     const [selected, setSelected] = useState<Record<number, string>>({});
     const [submitted, setSubmitted] = useState<Record<number, boolean>>({});
     const [quizState, setQuizState] = useState<QuizState>('taking');
+    const [hasSaved, setHasSaved] = useState(false);
 
-    // Normalise options to a plain string array regardless of what the AI returned
     const getOptions = (q: QuizQuestion): string[] => {
         if (Array.isArray(q.options)) return q.options;
         if (q.options && typeof q.options === 'object') return Object.values(q.options);
@@ -28,7 +31,7 @@ export function QuizPlayer({ questions }: QuizPlayerProps) {
     };
 
     const handleSelect = (qIndex: number, option: string) => {
-        if (submitted[qIndex]) return; // locked after submission
+        if (submitted[qIndex]) return;
         setSelected((prev) => ({ ...prev, [qIndex]: option }));
     };
 
@@ -46,25 +49,39 @@ export function QuizPlayer({ questions }: QuizPlayerProps) {
 
     const percentage = Math.round((score / questions.length) * 100);
 
+    const handleSeeResults = () => {
+        setQuizState('results');
+        if (onSave && savedQuizId) {
+            onSave(score, questions.length);
+            setHasSaved(true);
+        }
+    };
+
     const handleReset = () => {
         setSelected({});
         setSubmitted({});
         setQuizState('taking');
+        setHasSaved(false);
+        onRetake?.();
     };
 
     if (quizState === 'results') {
         return (
             <div className="space-y-6">
-                {/* Score card */}
                 <div className={`rounded-2xl p-6 text-center ${percentage >= 60 ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
                     <Trophy className={`h-10 w-10 mx-auto mb-2 ${percentage >= 60 ? 'text-green-500' : 'text-red-400'}`} />
                     <p className="text-3xl font-black text-gray-900">{score} / {questions.length}</p>
                     <p className={`text-lg font-bold mt-1 ${percentage >= 60 ? 'text-green-600' : 'text-red-600'}`}>
                         {percentage}% — {percentage >= 60 ? 'Passed' : 'Needs improvement'}
                     </p>
+                    {savedQuizId && hasSaved && (
+                        <p className="text-xs text-blue-600 font-medium mt-2 flex items-center justify-center gap-1">
+                            <Bookmark className="h-3.5 w-3.5" />
+                            Result saved
+                        </p>
+                    )}
                 </div>
 
-                {/* Review */}
                 <div className="space-y-4">
                     {questions.map((q, i) => {
                         const opts = getOptions(q);
@@ -169,7 +186,7 @@ export function QuizPlayer({ questions }: QuizPlayerProps) {
 
             {allAnswered && (
                 <button
-                    onClick={() => setQuizState('results')}
+                    onClick={handleSeeResults}
                     className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-2xl transition-all flex items-center justify-center gap-2"
                 >
                     <Trophy className="h-5 w-5" />
